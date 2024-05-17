@@ -5,7 +5,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
 
-from handlers import registration, address, appointment, profile, choose_step, admin
+from handlers.user import registration
+from handlers.admin import admin
+from handlers.user import address, appointment, choose_step, profile
 from secret import telegram_token
 
 async def main():

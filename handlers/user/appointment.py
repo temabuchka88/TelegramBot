@@ -9,7 +9,7 @@ from datetime import datetime
 from datetime import datetime
 import time
 from aiogram import types
-from . import current_calendar
+from ...calendars import current_calendar
 from states import AppointmentStep
 from keyboards.admin.appointment_time import appointment_time_keyboard
 from secret import  db_connect

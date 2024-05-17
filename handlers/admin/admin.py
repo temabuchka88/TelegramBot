@@ -5,8 +5,8 @@ from keyboards.admin.admin import admin_keyboard
 from keyboards.admin.time_appointment import time_keyboard
 from keyboards.admin.choose__type_delete import delete_type
 from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep
-from . import telegramcalendar
-from . import current_calendar
+from ...calendars import telegramcalendar
+from ...calendars import current_calendar
 from keyboards.admin.time_delete import time_delete_keyboard
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base,sessionmaker
