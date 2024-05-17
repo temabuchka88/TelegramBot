@@ -1,37 +1,19 @@
 from aiogram import Router, F
-from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, ReplyKeyboardRemove
-from keyboards.contact_button import contact_button
-from keyboards.choose_step import all_steps_button
-from keyboards.admin import admin_keyboard
-from keyboards.time_appointment import time_keyboard
-from keyboards.choose__type_delete import delete_type
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message
+from keyboards.admin.admin import admin_keyboard
+from keyboards.admin.time_appointment import time_keyboard
+from keyboards.admin.choose__type_delete import delete_type
 from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep
 from . import telegramcalendar
 from . import current_calendar
-from keyboards.time_delete import time_delete_keyboard
-
-# from curren_calendar import create_current_calendar
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Boolean,
-    ForeignKey,
-    DateTime,
-    create_engine,
-    select,
-    text,
-)
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from keyboards.admin.time_delete import time_delete_keyboard
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base,sessionmaker
 from datetime import datetime
 from aiogram import types
 from models import AvailableTime
 from secret import  db_connect
-# from .current_calendar import create_current_calendar
 
 router = Router()
 
@@ -140,36 +122,6 @@ async def show_all_appointment(message: Message, state: FSMContext):
         )
         await state.set_state(DeleteAllDayStep.choose_date)
 
-
-# @router.callback_query(DeleteAllDayStep.choose_date)
-# async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
-#     await callback.message.edit_text(
-#         "Выберите дату для удаления: ",
-#         reply_markup=current_calendar.create_current_calendar(),
-#     )
-#     await state.set_state(DeleteAllDayStep.delete_day)
-
-
-# @router.callback_query(DeleteAllDayStep.delete_day)
-# async def delete_all_day(callback: types.CallbackQuery, state: FSMContext):
-#     data = current_calendar.separate_callback_data(callback.data)
-#     if data[0] == "DAY":
-#         action, year, month, day = callback.data.split(";")
-#         year, month, day = map(int, (year, month, day))
-#         year = datetime(year, 1, 1).year
-#         month = datetime(year, month, 1).month
-#         day = datetime(year, month, day).day
-#         date = datetime(year, month, day).date()
-#         appointment = (
-#             session.query(AvailableTime).filter(AvailableTime.date == date).first()
-#         )
-#         session.delete(appointment)
-#         session.commit()
-#         await callback.message.edit_text(
-#             f"Вы успешно удалили запись: {date}", reply_markup=None
-#         )
-
-
 @router.callback_query(F.data == "delete_full_day")
 async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
@@ -205,7 +157,6 @@ async def delete_all_day(callback: types.CallbackQuery, state: FSMContext):
         session.close()
 
 
-# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 @router.callback_query(F.data == "delete_time")
 async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
@@ -263,7 +214,6 @@ async def delete_selected_time(callback: types.CallbackQuery, state: FSMContext)
                     .first()
                 )
                 if appointment:
-                    # Преобразование строк времени в объекты datetime.time
                     selected_times_datetime = [datetime.strptime(time, "%H:%M").time() for time in selected_times]
                     remaining_times = [time for time in appointment.times if time not in selected_times_datetime]
                     if remaining_times:

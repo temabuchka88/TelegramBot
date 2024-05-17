@@ -1,35 +1,15 @@
 from aiogram import Router, F
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, ReplyKeyboardRemove
-
-from keyboards.contact_button import contact_button
-from keyboards.choose_step import all_steps_button
-
+from aiogram.types import Message
+from keyboards.user.contact_button import contact_button
+from keyboards.user.choose_step import all_steps_button
 from states import RegistrationStep
 from models import User
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Boolean,
-    ForeignKey,
-    DateTime,
-    create_engine,
-    select,
-    text,
-)
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
-from datetime import datetime
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base,sessionmaker
 from secret import  db_connect
 router = Router()
-
-
-# class RegistrationStep(StatesGroup):
-# registration_name = State()
-# registration_instagram = State()
-# registration_contact = State()
 
 
 Base = declarative_base()

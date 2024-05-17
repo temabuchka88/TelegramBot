@@ -1,67 +1,20 @@
 from aiogram import Router, F
-from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, ReplyKeyboardRemove
-
-from keyboards.contact_button import contact_button
-from keyboards.choose_step import all_steps_button
-from keyboards.back_to_main_menu import back_to_main_menu
-
-from states import RegistrationStep
-
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Boolean,
-    ForeignKey,
-    DateTime,
-    create_engine,
-    select,
-    text,
-)
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from aiogram.types import Message
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base,sessionmaker
 from datetime import datetime
 from models import User, AvailableTime, Appointment
-
-# from asd import GoogleCalendar
-import calendar as std_calendar
 from datetime import datetime
-
-from aiogram_calendar import (
-    SimpleCalendar,
-    SimpleCalendarCallback,
-    DialogCalendar,
-    DialogCalendarCallback,
-    get_user_locale,
-)
-import logging
-import asyncio
-import sys
 from datetime import datetime
 import time
-from keyboards.time_appointment import time_keyboard
-from aiogram_calendar import (
-    SimpleCalendar,
-    SimpleCalendarCallback,
-    DialogCalendar,
-    DialogCalendarCallback,
-    get_user_locale,
-)
-from aiogram import Bot, Dispatcher, F
-from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart
-from aiogram.filters.callback_data import CallbackData
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, CallbackQuery
-from aiogram.utils.markdown import hbold
-from . import telegramcalendar
 from aiogram import types
 from . import current_calendar
 from states import AppointmentStep
-router = Router()
-from keyboards.appointment_time import appointment_time_keyboard
+from keyboards.admin.appointment_time import appointment_time_keyboard
 from secret import  db_connect
+from babel.dates import format_datetime
+router = Router()
 Base = declarative_base()
 connection_string = db_connect
 engine = create_engine(connection_string)
@@ -116,10 +69,21 @@ async def delete_selected_time(callback: types.CallbackQuery, state: FSMContext)
         time_obj = time.strptime(callback.data, '%H:%M')
         appointment_date = datetime(data["year"], data["month"], data["day"], time_obj.tm_hour,time_obj.tm_min)
         user = session.query(User).filter(User.telegram_id == callback.from_user.id).first()
-        print(user)
         appointment = Appointment(appointment_date = appointment_date, user_id=user.id)
         session.add(appointment)
+        available_time = session.query(AvailableTime).filter(AvailableTime.date == datetime(data["year"], data["month"], data["day"]).date()).first()
+        
+        if available_time:
+            appointment_time_str = appointment_date.time().strftime('%H:%M:%S')
+            available_time.times = [time for time in available_time.times if time.strftime('%H:%M:%S') != appointment_time_str]
+            
+            if not available_time.times:
+                session.delete(available_time)
         session.commit()
+        appointment_date_str = format_datetime(appointment_date, format="d MMMM", locale='ru')
+        appointment_time_str = appointment_date.strftime('%H:%M')
+        await callback.message.edit_text(f'Вы записаны на {appointment_date_str} в {appointment_time_str}')
+        await state.clear()
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:

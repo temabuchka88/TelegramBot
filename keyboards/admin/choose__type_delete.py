@@ -1,8 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-
 def delete_type():
     buttons = []
     b1 = InlineKeyboardButton(text="Удалить весь день", callback_data="delete_full_day")

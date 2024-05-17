@@ -1,30 +1,8 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import calendar
-from aiogram import Router, F
-from aiogram.filters import Command, StateFilter
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, ReplyKeyboardRemove
-
-from keyboards.contact_button import contact_button
-from keyboards.choose_step import all_steps_button
-
-from states import RegistrationStep
-
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Boolean,
-    ForeignKey,
-    DateTime,
-    create_engine,
-    select,
-    text,
-)
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
-from sqlalchemy import Column, Integer, Date, ARRAY, Time
 from models import AvailableTime
 from secret import  db_connect
 

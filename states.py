@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from keyboards.contact_button import contact_button
+from keyboards.user.contact_button import contact_button
 
 
 # class AllStep(StatesGroup):

@@ -1,9 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-
-def time_delete_keyboard(times):
+def appointment_time_keyboard(times):
     buttons = []
     for time in times:
         button = InlineKeyboardButton(text=time, callback_data=time)

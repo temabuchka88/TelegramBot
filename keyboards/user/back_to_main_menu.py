@@ -1,7 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from aiogram import types
-
 
 def back_to_main_menu():
     kb = ReplyKeyboardBuilder()
