@@ -1,20 +1,23 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from keyboards.admin.admin import admin_keyboard
-from keyboards.admin.time_appointment import time_keyboard
-from keyboards.admin.choose__type_delete import delete_type
-from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep
-from ...calendars import telegramcalendar
-from ...calendars import current_calendar
-from keyboards.admin.time_delete import time_delete_keyboard
+from aiogram.filters import Command
+from keyboards.admin.main_menu import admin_keyboard
+from keyboards.admin.admin_list import admin_list_keyboard
+from keyboards.admin.create.choose_time import time_keyboard
+from keyboards.admin.delete.choose_type import delete_type
+from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep, AddAdmin, DeleteAdmin
+from all_calendars import telegramcalendar
+from all_calendars import current_calendar
+from keyboards.admin.delete.choose_time import time_delete_keyboard
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base,sessionmaker
 from datetime import datetime
 from aiogram import types
-from models import AvailableTime
+from models import AvailableTime, Appointment, User
 from secret import  db_connect
-
+from babel.dates import format_datetime
+import json
 router = Router()
 
 Base = declarative_base()
@@ -24,16 +27,37 @@ engine = create_engine(connection_string)
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
+with open('admin_list.json', 'r') as file:
+    admins = json.load(file)
 
-@router.message(F.text == "Admin")
+def is_admin(user_id, admins):
+    for name, telegram_id in admins.items():
+        if user_id == telegram_id:
+            return True
+    return False
+
+def save_admins(admins):
+    with open('admin_list.json', 'w') as file:
+        json.dump(admins, file)
+
+@router.message(Command("startadmin"))
+async def start_admin(message: Message):
+    if not admins:
+        admins['initial_admin'] = message.from_user.id
+        save_admins(admins)
+        await message.answer("Вы были назначены администратором. Теперь вы можете добавлять других администраторов.")
+    else:
+        await message.answer("Администратор уже существует.")
+
+@router.message(Command("admin"))
 async def admin_menu(message: Message):
-    if message.from_user.id == 558165433 or message.from_user.id == 307250457:
-        await message.answer("Admin панель", reply_markup=admin_keyboard())
+    if is_admin(message.from_user.id, admins):
+        await message.answer("Добро пожаловать в admin панель, для изменения списка администраторов введите 'Admin list'", reply_markup=admin_keyboard())
 
 
 @router.message(F.text == "Добавить запись")
 async def add_appointment(message: Message, state: FSMContext):
-    if message.from_user.id == 558165433 or message.from_user.id == 307250457:
+    if is_admin(message.from_user.id, admins):
         await message.reply(
             "Выберите дату: ", reply_markup=telegramcalendar.create_calendar()
         )
@@ -46,9 +70,9 @@ async def process_calendar_button(callback: types.CallbackQuery, state: FSMConte
     if data[0] == "DAY":
         year, month, day = map(int, data[1:])
         await state.update_data(
-            year=datetime(year, 1, 1).year,
-            month=datetime(year, month, 1).month,
-            day=datetime(year, month, day).day,
+            year=year,
+            month=month,
+            day=day,
         )
         await callback.message.edit_text(
             "Выберите время:", reply_markup=time_keyboard()
@@ -62,15 +86,23 @@ async def process_time_selection(callback: types.CallbackQuery, state: FSMContex
     try:
         if callback.data == "accept":
             data = await state.get_data()
-            times = data.get("selected_times", [])
+            selected_times = data.get("selected_times", set())
             year = data.get("year")
             month = data.get("month")
             day = data.get("day")
             date = datetime(year, month, day).date()
-            available_time = AvailableTime(date=date, times=times)
-            session.add(available_time)
+
+            available_time = session.query(AvailableTime).filter_by(date=date).first()
+            if available_time:
+                existing_times = set([time.strftime('%H:%M') for time in available_time.times])
+                all_times = sorted(existing_times.union(selected_times))
+                available_time.times = [datetime.strptime(t, '%H:%M').time() for t in all_times]
+            else:
+                available_time = AvailableTime(date=date, times=sorted([datetime.strptime(t, '%H:%M').time() for t in selected_times]))
+                session.add(available_time)
+                
             session.commit()
-            formatted_times = ", ".join(sorted(times))
+            formatted_times = ", ".join(sorted(selected_times))
             await callback.message.answer(
                 f"Вы успешно создали запись: {date} : {formatted_times}"
             )
@@ -79,20 +111,25 @@ async def process_time_selection(callback: types.CallbackQuery, state: FSMContex
         else:
             selected_time = callback.data
             data = await state.get_data()
-            times = data.get("selected_times", [])
-            times.append(selected_time)
-            await state.update_data(selected_times=times)
+            times = data.get("selected_times", set())
+            if selected_time not in times:
+                times.add(selected_time)
+                await state.update_data(selected_times=times)
+            else:
+                await callback.message.answer(
+                    f"Время {selected_time} уже выбрано. Выберите другое время."
+                )
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
         session.close()
 
 
-@router.message(F.text == "Все записи")
+@router.message(F.text == "Свободные окошки")
 async def show_all_appointment(message: Message, state: FSMContext):
     session = Session()
     try:
-        if message.from_user.id == 558165433 or message.from_user.id == 307250457:
+        if is_admin(message.from_user.id, admins):
             appointments = (
                 session.query(AvailableTime)
                 .order_by(
@@ -114,8 +151,8 @@ async def show_all_appointment(message: Message, state: FSMContext):
 
 
 @router.message(F.text == "Удалить запись")
-async def show_all_appointment(message: Message, state: FSMContext):
-    if message.from_user.id == 558165433 or message.from_user.id == 307250457:
+async def delete_appointment(message: Message, state: FSMContext):
+    if is_admin(message.from_user.id, admins):
         await message.reply(
             f"Вы хотите удалить весь день с записи или какую-то конкретную запись?",
             reply_markup=delete_type(),
@@ -244,4 +281,136 @@ async def delete_selected_time(callback: types.CallbackQuery, state: FSMContext)
     finally:
         session.close()
 
+@router.message(F.text == "Активные записи")
+async def show_active_appointment(message: Message, state: FSMContext):
+    session = Session()
+    try:
+        if is_admin(message.from_user.id, admins):
+            appointments = (
+                session.query(Appointment)
+                .join(User)
+                .filter(Appointment.appointment_date > datetime.now())
+                .order_by(Appointment.appointment_date)
+                .all()
+            )
+            formatted_appointments = "\n".join(
+                [
+                    f"{format_datetime(a.appointment_date, format='d MMMM yyyy', locale='ru')} {a.appointment_date.strftime('%H:%M')} {a.user.name} {a.user.contact} {a.user.instagram}"
+                    for a in appointments
+                ]
+            )
+            await message.answer(f"Все записи:\n{formatted_appointments}")
+    except Exception as e:
+        print('Произошла ошибка:', e)
+    finally:
+        session.close()
 
+@router.message(F.text == "Прошлые записи")
+async def show_past_appointment(message: Message, state: FSMContext):
+    session = Session()
+    try:
+        if is_admin(message.from_user.id, admins):
+            appointments = (
+                session.query(Appointment)
+                .join(User)
+                .filter(Appointment.appointment_date < datetime.now())  
+                .order_by(Appointment.appointment_date.desc())  
+                .all()
+            )
+            formatted_appointments = "\n".join(
+                [
+                    f"{format_datetime(a.appointment_date, format='d MMMM yyyy', locale='ru')} {a.appointment_date.strftime('%H:%M')} {a.user.name} {a.user.contact} {a.user.instagram}"
+                    for a in appointments
+                ]
+            )
+            await message.answer(f"Прошлые записи:\n{formatted_appointments}")
+    except Exception as e:
+        print('Произошла ошибка:', e)
+    finally:
+        session.close()
+
+@router.message(F.text == "Список пользователей")
+async def show_user_list(message: Message, state: FSMContext):
+    session = Session()
+    try:
+        if is_admin(message.from_user.id, admins):
+            users = (
+                session.query(User)
+                .outerjoin(Appointment)
+                .with_entities(
+                    User.name,
+                    User.contact,
+                    User.instagram,
+                    User.visit_count,
+                    User.telegram_id,
+                )
+                .order_by(User.name)
+                .all()
+            )
+            formatted_users = "\n".join(
+                [
+                    f"{user.name} {user.contact} {user.instagram} посещений: {user.visit_count} telegramID: {user.telegram_id}"
+                    for user in users
+                ]
+            )
+            await message.answer(f"Список пользователей:\n{formatted_users}")
+    except Exception as e:
+        print('Произошла ошибка:', e)
+    finally:
+        session.close()
+
+
+@router.message(F.text == "Admin list")
+async def admin_list(message: Message):
+    if is_admin(message.from_user.id, admins):
+        admin_list_str = "\n".join([f"{name}: {telegram_id}" for name, telegram_id in admins.items()])
+        response_message = f"Список администраторов:\n{admin_list_str}\n\n"
+        await message.answer(f"Список администраторов:\n{admin_list_str}\n\n", reply_markup=admin_list_keyboard())
+
+@router.message(F.text == "Добавить администратора")
+async def add_admin(message: Message,state: FSMContext):
+    if is_admin(message.from_user.id, admins):
+        await message.answer("Введите имя нового администратора:")
+        await state.set_state(AddAdmin.enter_name)
+
+@router.message(F.text == "Удалить администратора")
+async def delete_admin(message: Message, state: FSMContext):
+    if is_admin(message.from_user.id, admins):
+        await message.answer("Введите имя администратора, которого нужно удалить:")
+        await state.set_state(DeleteAdmin.enter_name)
+
+@router.message(AddAdmin.enter_name)
+async def process_enter_name(message: Message, state: FSMContext):
+    if is_admin(message.from_user.id, admins):
+        new_admin_name = message.text
+        await state.update_data(new_admin_name=new_admin_name)
+        await message.answer("Введите Telegram ID нового администратора:")
+        await state.set_state(AddAdmin.enter_id)
+
+@router.message(AddAdmin.enter_id)
+async def process_enter_id(message: Message, state: FSMContext):
+    if is_admin(message.from_user.id, admins):
+        new_admin_id = int(message.text)
+        data = await state.get_data()
+        new_admin_name = data.get("new_admin_name")
+        admins[new_admin_name] = new_admin_id
+        save_admins(admins)
+        await message.answer(f"Администратор {new_admin_name} успешно добавлен.",reply_markup=admin_keyboard())
+        await state.clear()
+
+@router.message(DeleteAdmin.enter_name)
+async def process_delete_name(message: Message, state: FSMContext):
+    if is_admin(message.from_user.id, admins):
+        admin_name_to_delete = message.text
+        if admin_name_to_delete in admins:
+            del admins[admin_name_to_delete]
+            save_admins(admins)
+            await message.answer(f"Администратор {admin_name_to_delete} успешно удален.", reply_markup=admin_keyboard())
+        else:
+            await message.answer(f"Администратор с именем {admin_name_to_delete} не найден.", reply_markup=admin_keyboard())
+        await state.clear()
+
+@router.message(F.text == "Назад")
+async def show_admin_menu(message: Message):
+    if is_admin(message.from_user.id, admins):
+        await message.answer("Выберите действие:", reply_markup=admin_keyboard())

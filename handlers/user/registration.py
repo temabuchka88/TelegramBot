@@ -2,8 +2,8 @@ from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from keyboards.user.contact_button import contact_button
-from keyboards.user.choose_step import all_steps_button
+from keyboards.user.send_contact import contact_button
+from keyboards.user.main_menu import all_steps_button
 from states import RegistrationStep
 from models import User
 from sqlalchemy import create_engine
@@ -23,8 +23,18 @@ Session = sessionmaker(bind=engine)
 
 @router.message(Command("start"))
 async def start_command(message: Message, state: FSMContext):
-    await message.answer("Привет! Давай быстро зарегистрируем тебя. Введи своё имя:")
-    await state.set_state(RegistrationStep.registration_name)
+    session = Session()
+    try:
+        user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+        if user:
+            await message.answer("Вы уже зарегистрированы и можете записаться.",reply_markup=all_steps_button())
+        else:
+            await message.answer("Привет! Давай быстро зарегистрируем тебя. Введи своё имя:")
+            await state.set_state(RegistrationStep.registration_name)
+    except Exception as e:
+        print('Произошла ошибка:', e)
+    finally:
+        session.close()
 
 
 @router.message(RegistrationStep.registration_name)

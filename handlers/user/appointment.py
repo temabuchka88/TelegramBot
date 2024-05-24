@@ -6,12 +6,12 @@ from sqlalchemy.orm import declarative_base,sessionmaker
 from datetime import datetime
 from models import User, AvailableTime, Appointment
 from datetime import datetime
-from datetime import datetime
 import time
 from aiogram import types
-from ...calendars import current_calendar
+from all_calendars import current_calendar
 from states import AppointmentStep
-from keyboards.admin.appointment_time import appointment_time_keyboard
+from keyboards.user.appointment.choose_time import appointment_time_keyboard
+from keyboards.user.main_menu import all_steps_button
 from secret import  db_connect
 from babel.dates import format_datetime
 router = Router()
@@ -21,13 +21,26 @@ engine = create_engine(connection_string)
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
-
 @router.message(F.text == "Записаться")
 async def start_command(message: Message, state: FSMContext):
-    await message.reply(
-        "Выберите дату: ", reply_markup=current_calendar.create_current_calendar()
-    )
-    await state.set_state(AppointmentStep.choose_date)
+    session = Session()
+    try:
+        user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+        active_appointment = session.query(Appointment).filter_by(user_id=user.id).filter(Appointment.appointment_date > datetime.now()).first()
+        if active_appointment:
+            await message.reply("Вы уже записаны на другое время.",reply_markup=all_steps_button())
+            return
+        else:
+            await message.reply(
+                "Выберите дату: ", reply_markup=current_calendar.create_current_calendar()
+            )
+            await state.set_state(AppointmentStep.choose_date)
+    except Exception as e:
+        print('Произошла ошибка:', e)
+    finally:
+        session.close()
+
+
 
 @router.callback_query(AppointmentStep.choose_date)
 async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
