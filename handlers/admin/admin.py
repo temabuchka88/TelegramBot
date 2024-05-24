@@ -18,6 +18,7 @@ from models import AvailableTime, Appointment, User
 from secret import  db_connect
 from babel.dates import format_datetime
 import json
+import os
 router = Router()
 
 Base = declarative_base()
@@ -27,17 +28,28 @@ engine = create_engine(connection_string)
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
-with open('admin_list.json', 'r') as file:
-    admins = json.load(file)
+admins_file = 'admin_list.json'
 
-def is_admin(user_id, admins):
+def load_admins():
+    if os.path.exists(admins_file):
+        with open(admins_file, 'r') as file:
+            return json.load(file)
+    else:
+        # Если файл не существует, создаем пустой файл и возвращаем пустой словарь
+        with open(admins_file, 'w') as file:
+            json.dump({}, file)
+        return {}
+
+admins = load_admins()
+
+def is_admin(user_id):
     for name, telegram_id in admins.items():
         if user_id == telegram_id:
             return True
     return False
 
 def save_admins(admins):
-    with open('admin_list.json', 'w') as file:
+    with open(admins_file, 'w') as file:
         json.dump(admins, file)
 
 @router.message(Command("startadmin"))
@@ -51,13 +63,13 @@ async def start_admin(message: Message):
 
 @router.message(Command("admin"))
 async def admin_menu(message: Message):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         await message.answer("Добро пожаловать в admin панель, для изменения списка администраторов введите 'Admin list'", reply_markup=admin_keyboard())
 
 
 @router.message(F.text == "Добавить запись")
 async def add_appointment(message: Message, state: FSMContext):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         await message.reply(
             "Выберите дату: ", reply_markup=telegramcalendar.create_calendar()
         )
@@ -129,7 +141,7 @@ async def process_time_selection(callback: types.CallbackQuery, state: FSMContex
 async def show_all_appointment(message: Message, state: FSMContext):
     session = Session()
     try:
-        if is_admin(message.from_user.id, admins):
+        if is_admin(message.from_user.id):
             appointments = (
                 session.query(AvailableTime)
                 .order_by(
@@ -152,7 +164,7 @@ async def show_all_appointment(message: Message, state: FSMContext):
 
 @router.message(F.text == "Удалить запись")
 async def delete_appointment(message: Message, state: FSMContext):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         await message.reply(
             f"Вы хотите удалить весь день с записи или какую-то конкретную запись?",
             reply_markup=delete_type(),
@@ -285,7 +297,7 @@ async def delete_selected_time(callback: types.CallbackQuery, state: FSMContext)
 async def show_active_appointment(message: Message, state: FSMContext):
     session = Session()
     try:
-        if is_admin(message.from_user.id, admins):
+        if is_admin(message.from_user.id):
             appointments = (
                 session.query(Appointment)
                 .join(User)
@@ -309,7 +321,7 @@ async def show_active_appointment(message: Message, state: FSMContext):
 async def show_past_appointment(message: Message, state: FSMContext):
     session = Session()
     try:
-        if is_admin(message.from_user.id, admins):
+        if is_admin(message.from_user.id):
             appointments = (
                 session.query(Appointment)
                 .join(User)
@@ -333,7 +345,7 @@ async def show_past_appointment(message: Message, state: FSMContext):
 async def show_user_list(message: Message, state: FSMContext):
     session = Session()
     try:
-        if is_admin(message.from_user.id, admins):
+        if is_admin(message.from_user.id):
             users = (
                 session.query(User)
                 .outerjoin(Appointment)
@@ -362,26 +374,26 @@ async def show_user_list(message: Message, state: FSMContext):
 
 @router.message(F.text == "Admin list")
 async def admin_list(message: Message):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         admin_list_str = "\n".join([f"{name}: {telegram_id}" for name, telegram_id in admins.items()])
         response_message = f"Список администраторов:\n{admin_list_str}\n\n"
         await message.answer(f"Список администраторов:\n{admin_list_str}\n\n", reply_markup=admin_list_keyboard())
 
 @router.message(F.text == "Добавить администратора")
 async def add_admin(message: Message,state: FSMContext):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         await message.answer("Введите имя нового администратора:")
         await state.set_state(AddAdmin.enter_name)
 
 @router.message(F.text == "Удалить администратора")
 async def delete_admin(message: Message, state: FSMContext):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         await message.answer("Введите имя администратора, которого нужно удалить:")
         await state.set_state(DeleteAdmin.enter_name)
 
 @router.message(AddAdmin.enter_name)
 async def process_enter_name(message: Message, state: FSMContext):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         new_admin_name = message.text
         await state.update_data(new_admin_name=new_admin_name)
         await message.answer("Введите Telegram ID нового администратора:")
@@ -389,7 +401,7 @@ async def process_enter_name(message: Message, state: FSMContext):
 
 @router.message(AddAdmin.enter_id)
 async def process_enter_id(message: Message, state: FSMContext):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         new_admin_id = int(message.text)
         data = await state.get_data()
         new_admin_name = data.get("new_admin_name")
@@ -400,7 +412,7 @@ async def process_enter_id(message: Message, state: FSMContext):
 
 @router.message(DeleteAdmin.enter_name)
 async def process_delete_name(message: Message, state: FSMContext):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         admin_name_to_delete = message.text
         if admin_name_to_delete in admins:
             del admins[admin_name_to_delete]
@@ -412,5 +424,5 @@ async def process_delete_name(message: Message, state: FSMContext):
 
 @router.message(F.text == "Назад")
 async def show_admin_menu(message: Message):
-    if is_admin(message.from_user.id, admins):
+    if is_admin(message.from_user.id):
         await message.answer("Выберите действие:", reply_markup=admin_keyboard())
