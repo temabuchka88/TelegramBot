@@ -35,7 +35,6 @@ def load_admins():
         with open(admins_file, 'r') as file:
             return json.load(file)
     else:
-        # Если файл не существует, создаем пустой файл и возвращаем пустой словарь
         with open(admins_file, 'w') as file:
             json.dump({}, file)
         return {}

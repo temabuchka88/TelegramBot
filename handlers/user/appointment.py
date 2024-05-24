@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy import create_engine
@@ -14,6 +14,8 @@ from keyboards.user.appointment.choose_time import appointment_time_keyboard
 from keyboards.user.main_menu import all_steps_button
 from secret import  db_connect
 from babel.dates import format_datetime
+from ..admin.admin import load_admins
+
 router = Router()
 Base = declarative_base()
 connection_string = db_connect
@@ -21,6 +23,21 @@ engine = create_engine(connection_string)
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
+
+admins = load_admins()
+
+def is_admin(user_id):
+    return str(user_id) in admins.values()
+
+async def notify_admins(bot, user_name, appointment_time):
+    appointment_date_str = format_datetime(appointment_time, format="d MMMM", locale='ru')
+    appointment_time_str = appointment_time.strftime('%H:%M')
+    for admin_id in admins.values():
+        await bot.send_message(
+            chat_id=admin_id,
+            text=f"Пользователь {user_name} записался на {appointment_date_str} в {appointment_time_str}."
+        )
+
 @router.message(F.text == "Записаться")
 async def start_command(message: Message, state: FSMContext):
     session = Session()
@@ -75,7 +92,7 @@ async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
         session.close()
 
 @router.callback_query(AppointmentStep.confirm_booking)
-async def delete_selected_time(callback: types.CallbackQuery, state: FSMContext):
+async def delete_selected_time(callback: types.CallbackQuery, state: FSMContext, bot: Bot):
     session = Session()
     try:
         data = await state.get_data()
@@ -96,6 +113,7 @@ async def delete_selected_time(callback: types.CallbackQuery, state: FSMContext)
         appointment_date_str = format_datetime(appointment_date, format="d MMMM", locale='ru')
         appointment_time_str = appointment_date.strftime('%H:%M')
         await callback.message.edit_text(f'Вы записаны на {appointment_date_str} в {appointment_time_str}')
+        await notify_admins(bot, user.name, appointment_date)
         await state.clear()
     except Exception as e:
         print('Произошла ошибка:', e)
