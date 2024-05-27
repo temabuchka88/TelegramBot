@@ -1,16 +1,10 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import calendar
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 from models import AvailableTime
-from secret import db_connect
+from bot import engine
+from sqlalchemy.orm import sessionmaker
 
-Base = declarative_base()
-connection_string = db_connect
-engine = create_engine(connection_string)
-
-Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 russian_month_names = [
@@ -31,17 +25,14 @@ russian_month_names = [
 
 
 def create_callback_data(action, year, month, day):
-    """Create the callback data associated with each button"""
     return ";".join([action, str(year), str(month), str(day)])
 
 
 def separate_callback_data(data):
-    """Separate the callback data"""
     return data.split(";")
 
 
 def get_dates_with_appointments():
-    """Get all dates with appointments from the database"""
     session = Session()
     try:
         dates = session.query(AvailableTime.date.distinct()).all()
@@ -53,7 +44,6 @@ def get_dates_with_appointments():
 
 
 def create_current_calendar(year=None, month=None):
-    """Create a calendar with dates from the database"""
     dates_with_appointments = get_dates_with_appointments()
     now = datetime.now()
     today = now.date()
@@ -63,7 +53,6 @@ def create_current_calendar(year=None, month=None):
         month = now.month
     data_ignore = create_callback_data("IGNORE", year, month, 0)
     keyboard = []
-    # First row - Month and Year
     row = []
     row.append(
         InlineKeyboardButton(
@@ -71,7 +60,6 @@ def create_current_calendar(year=None, month=None):
         )
     )
     keyboard.append(row)
-    # Second row - Week Days
     row = []
     for day in ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]:
         row.append(InlineKeyboardButton(text=day, callback_data=data_ignore))
@@ -87,6 +75,8 @@ def create_current_calendar(year=None, month=None):
                 date = datetime(year, month, day).date()
                 if date < today:
                     row.append(InlineKeyboardButton(text=" - ", callback_data=data_ignore))
+                elif date == today:
+                    row.append(InlineKeyboardButton(text="-", callback_data=data_ignore))
                 elif date in dates_with_appointments:
                     row.append(
                         InlineKeyboardButton(
@@ -99,14 +89,12 @@ def create_current_calendar(year=None, month=None):
                         InlineKeyboardButton(text=" - ", callback_data=data_ignore)
                     )
         keyboard.append(row)
-    # Last row - Buttons
     row = []
     row.append(
         InlineKeyboardButton(
             text="<", callback_data=create_callback_data("PREV-MONTH", year, month, 1)
         )
     )
-    # row.append(InlineKeyboardButton(text=" ", callback_data=data_ignore))
     row.append(
         InlineKeyboardButton(
             text=">", callback_data=create_callback_data("NEXT-MONTH", year, month, 1)

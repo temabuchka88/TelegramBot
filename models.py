@@ -1,22 +1,12 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, ARRAY, Time, DateTime, BIGINT
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, ARRAY, Time, DateTime, BIGINT
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_utils import database_exists, create_database
-from secret import db_connect
-
-
-
-connection_string = db_connect
-engine = create_engine(connection_string)
+from bot import engine
 
 
 if not database_exists(engine.url):
     create_database(engine.url)
-
-
-Session = sessionmaker(bind=engine)
-session = Session()
-
 
 Base = declarative_base()
 

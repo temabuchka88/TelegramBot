@@ -4,3 +4,4 @@ aiogram
 sqlalchemy
 python-dateutil
 asyncpg
+apschedule

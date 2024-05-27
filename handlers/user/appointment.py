@@ -1,27 +1,19 @@
-from aiogram import Router, F, Bot
+from aiogram import Router, F, Bot, types
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base,sessionmaker
-from datetime import datetime
-from models import User, AvailableTime, Appointment
 from datetime import datetime, timedelta
-import time
-from aiogram import types
+import  time
+from models import User, AvailableTime, Appointment
 from handlers.admin import current_calendar
 from states import AppointmentStep
 from keyboards.user.appointment.choose_time import appointment_time_keyboard
 from keyboards.user.main_menu import all_steps_button
-from secret import  db_connect
 from babel.dates import format_datetime
 from ..admin.admin import load_admins
+from bot import engine
+from sqlalchemy.orm import sessionmaker
 
 router = Router()
-Base = declarative_base()
-connection_string = db_connect
-engine = create_engine(connection_string)
-
-Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 admins = load_admins()

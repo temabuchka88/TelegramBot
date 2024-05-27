@@ -1,22 +1,14 @@
 from aiogram import Router, F, Bot
 from aiogram.types import Message
 from keyboards.user.back_to_main_menu import back_to_main_menu
-from keyboards.user.appointment.cancel_appointment import cancel_appointment
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base,sessionmaker
 from models import User, Appointment, AvailableTime
-from secret import  db_connect
 from datetime import datetime
 from ..admin.admin import load_admins
 from babel.dates import format_datetime
+from bot import engine
+from sqlalchemy.orm import sessionmaker
 
 router = Router()
-
-Base = declarative_base()
-connection_string = db_connect
-engine = create_engine(connection_string)
-
-Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 admins = load_admins()

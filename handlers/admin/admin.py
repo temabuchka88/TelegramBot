@@ -20,14 +20,10 @@ from babel.dates import format_datetime
 import json
 import os
 from .telegramcalendar import create_calendar
+from bot import engine
+from sqlalchemy.orm import sessionmaker
 
 router = Router()
-
-Base = declarative_base()
-connection_string = db_connect
-engine = create_engine(connection_string)
-
-Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 admins_file = 'admin_list.json'
@@ -77,79 +73,6 @@ async def add_appointment(message: Message, state: FSMContext):
         await state.set_state(CreateAppointmentStep.choose_date)
 
 
-# @router.callback_query(CreateAppointmentStep.choose_date)
-# async def process_calendar_button(callback: types.CallbackQuery, state: FSMContext):
-#     data = telegramcalendar.separate_callback_data(callback.data)
-#     year, month, day = map(int, data[1:])
-#     curr = datetime(int(year), int(month), 1)
-#     if data[0] == "DAY":
-#         year, month, day = map(int, data[1:])
-#         await state.update_data(
-#             year=year,
-#             month=month,
-#             day=day,
-#         )
-#         await callback.message.edit_text(
-#             "Выберите время:", reply_markup=time_keyboard()
-#         )
-#         await state.set_state(CreateAppointmentStep.choose_time)
-
-#     elif data[0] == "PREV-MONTH":
-#         pre = curr - timedelta(days=1)
-#         await callback.message.edit_text(
-#             "Выберите время:", reply_markup=(create_calendar(int(pre.year),int(pre.month))
-#         ))
-#     elif data[0] == "NEXT-MONTH":
-#         ne = curr + timedelta(days=31)
-#         await callback.message.edit_text(
-#             "Выберите время:", reply_markup=(create_calendar(int(ne.year),int(ne.month))
-#         ))
-
-
-
-# @router.callback_query(CreateAppointmentStep.choose_date)
-# async def process_calendar_button(callback: types.CallbackQuery, state: FSMContext):
-#     data = telegramcalendar.separate_callback_data(callback.data)
-#     year, month, day = map(int, data[1:])
-#     curr = datetime(year, month, 1)
-
-#     if callback.data == "accept":
-#         data = await state.get_data()
-#         selected_days = data.get("selected_days", set())
-#         if not selected_days:
-#             await callback.message.answer("Вы не выбрали ни одной даты.")
-#             return
-
-#         await state.update_data(year=year, month=month, day=day)
-#         await callback.message.edit_text("Выберите время:", reply_markup=time_keyboard())
-#         await state.set_state(CreateAppointmentStep.choose_time)
-    
-#     elif data[0] == "PREV-MONTH":
-#         pre = curr - timedelta(days=1)
-#         await callback.message.edit_text("Выберите дату:", reply_markup=create_calendar(pre.year, pre.month))
-    
-#     elif data[0] == "NEXT-MONTH":
-#         ne = curr + timedelta(days=31)
-#         await callback.message.edit_text("Выберите дату:", reply_markup=create_calendar(ne.year, ne.month))
-    
-#     elif data[0] == "DAY":
-#         selected_date = datetime(year, month, day).date()
-#         state_data = await state.get_data()
-#         selected_days = state_data.get("selected_days", set())
-
-#         if selected_date in selected_days:
-#             selected_days.remove(selected_date)
-#         else:
-#             selected_days.add(selected_date)
-        
-#         await state.update_data(selected_days=selected_days)
-        
-#         # Update the calendar with the current selections
-#         await callback.message.edit_reply_markup(create_calendar(year, month))
-#     else:
-#         await callback.message.answer("Неправильный выбор.")
-
-# ///////////////////////////////////////////
 @router.callback_query(CreateAppointmentStep.choose_date)
 async def process_calendar_button(callback: types.CallbackQuery, state: FSMContext):
     try:
@@ -250,7 +173,6 @@ async def process_time_selection(callback: types.CallbackQuery, state: FSMContex
 
 
 
-# /////////////////////////////
 @router.message(F.text == "Свободные окошки")
 async def show_all_appointment(message: Message, state: FSMContext):
     session = Session()

@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -6,20 +6,11 @@ from keyboards.user.send_contact import contact_button
 from keyboards.user.main_menu import all_steps_button
 from states import RegistrationStep
 from models import User
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base,sessionmaker
-from secret import  db_connect
+from bot import engine
+from sqlalchemy.orm import sessionmaker
+
 router = Router()
-
-
-Base = declarative_base()
-connection_string = db_connect
-engine = create_engine(connection_string)
-
-Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
-
-
 
 @router.message(Command("start"))
 async def start_command(message: Message, state: FSMContext):

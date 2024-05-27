@@ -3,12 +3,7 @@ import datetime
 import calendar
 from .current_calendar import russian_month_names
 
-# def create_callback_data(action, year, month, day):
-#     """Create the callback data associated with each button"""
-#     return ";".join([action, str(year), str(month), str(day)])
-
 def create_callback_data(action, year=None, month=None, day=None):
-    """Create the callback data associated with each button"""
     data = [action]
     if year is not None:
         data.append(str(year))
@@ -19,7 +14,6 @@ def create_callback_data(action, year=None, month=None, day=None):
     return ";".join(data)
 
 def separate_callback_data(data):
-    """Separate the callback data"""
     return data.split(";")
 
 def create_calendar(year=None, month=None):
