@@ -6,11 +6,15 @@ from keyboards.user.send_contact import contact_button
 from keyboards.user.main_menu import all_steps_button
 from states import RegistrationStep
 from models import User
-from bot import engine
 from sqlalchemy.orm import sessionmaker
+from secret import  db_connect
+from sqlalchemy import create_engine
+
+connection_string = db_connect
+engine = create_engine(connection_string)
+Session = sessionmaker(bind=engine)
 
 router = Router()
-Session = sessionmaker(bind=engine)
 
 @router.message(Command("start"))
 async def start_command(message: Message, state: FSMContext):

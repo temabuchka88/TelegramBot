@@ -7,11 +7,15 @@ from babel.dates import format_datetime
 from handlers.user.cancel_appointment import notify_admins_cancel
 from keyboards.user.back_to_main_menu import back_to_main_menu
 from ..admin.admin import load_admins
-from bot import engine
 from sqlalchemy.orm import sessionmaker
+from secret import  db_connect
+from sqlalchemy import create_engine
+
+connection_string = db_connect
+engine = create_engine(connection_string)
+Session = sessionmaker(bind=engine)
 
 router = Router()
-Session = sessionmaker(bind=engine)
 admins = load_admins()
 
 

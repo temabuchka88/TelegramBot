@@ -2,9 +2,12 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import calendar
 from datetime import datetime
 from models import AvailableTime
-from bot import engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from secret import  db_connect
 
+connection_string = db_connect
+engine = create_engine(connection_string)
 Session = sessionmaker(bind=engine)
 
 russian_month_names = [

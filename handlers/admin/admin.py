@@ -15,16 +15,18 @@ from sqlalchemy.orm import declarative_base,sessionmaker
 from datetime import datetime, timedelta, date
 from aiogram import types
 from models import AvailableTime, Appointment, User
-from secret import  db_connect
 from babel.dates import format_datetime
 import json
 import os
 from .telegramcalendar import create_calendar
-from bot import engine
 from sqlalchemy.orm import sessionmaker
+from secret import db_connect
+
+connection_string = db_connect
+engine = create_engine(connection_string)
+Session = sessionmaker(bind=engine)
 
 router = Router()
-Session = sessionmaker(bind=engine)
 
 admins_file = 'admin_list.json'
 

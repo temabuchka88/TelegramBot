@@ -5,11 +5,15 @@ from keyboards.user.appointment.cancel_appointment import cancel_appointment
 from models import User, Appointment
 from datetime import datetime
 from babel.dates import format_datetime
-from bot import engine
 from sqlalchemy.orm import sessionmaker
+from secret import  db_connect
+from sqlalchemy import create_engine
+
+connection_string = db_connect
+engine = create_engine(connection_string)
+Session = sessionmaker(bind=engine)
 
 router = Router()
-Session = sessionmaker(bind=engine)
 
 
 @router.message(F.text == "Мой профиль")
@@ -29,7 +33,7 @@ async def show_profile(message: Message):
         else:
             active_appointment_text = "Нет активной записи"
             await message.answer(
-                f"Имя: {user.name}\nInstagram: {user.instagram}\nКонтактный номер: {user.contact}\nКоличество посещений: {visit_count}\nАктивная запись: {active_appointment_text}",
+                f"Имя: {user.name}\nInstagram: {user.instagram}\nКонтактный номер: {user.contact}\nАктивная запись: {active_appointment_text}",
                 reply_markup=back_to_main_menu()
             )
 

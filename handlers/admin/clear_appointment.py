@@ -1,11 +1,14 @@
 from datetime import datetime
 from aiogram import Router
 from models import AvailableTime
-
-from bot import engine
 from sqlalchemy.orm import sessionmaker
+from secret import  db_connect
+from sqlalchemy import create_engine
 
 router = Router()
+
+connection_string = db_connect
+engine = create_engine(connection_string)
 Session = sessionmaker(bind=engine)
 
 def clear_past_appointments():

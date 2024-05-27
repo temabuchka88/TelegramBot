@@ -29,7 +29,7 @@ async def main():
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     )
     scheduler = AsyncIOScheduler(temezone="Europe/Minsk")
-    scheduler.add_job(schedule_notifications, trigger=CronTrigger(hour=16, minute=37), kwargs={'bot':bot})
+    scheduler.add_job(schedule_notifications, trigger=CronTrigger(hour=12), kwargs={'bot':bot})
     scheduler.add_job(notify_admins_schedule, trigger=CronTrigger(hour=12), kwargs={'bot':bot})
     scheduler.add_job(notify_admins_schedule, trigger=CronTrigger(hour=20), kwargs={'bot':bot})
     scheduler.add_job(clear_past_appointments, trigger=CronTrigger(hour=20, day_of_week='mon'))

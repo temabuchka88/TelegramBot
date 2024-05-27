@@ -2,9 +2,12 @@ from datetime import datetime, timedelta
 from aiogram import Bot, Router
 from models import User,Appointment
 from .admin import load_admins
-from bot import engine
 from sqlalchemy.orm import sessionmaker
+from secret import  db_connect
+from sqlalchemy import create_engine
 
+connection_string = db_connect
+engine = create_engine(connection_string)
 Session = sessionmaker(bind=engine)
 
 admins = load_admins()

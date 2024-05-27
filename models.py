@@ -2,7 +2,13 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Date, ARRAY, Time, D
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_utils import database_exists, create_database
-from bot import engine
+from sqlalchemy.orm import sessionmaker
+from secret import  db_connect
+from sqlalchemy import create_engine
+
+connection_string = db_connect
+engine = create_engine(connection_string)
+Session = sessionmaker(bind=engine)
 
 
 if not database_exists(engine.url):
