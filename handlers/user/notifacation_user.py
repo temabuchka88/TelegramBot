@@ -67,7 +67,7 @@ async def process_confirmation(callback: types.CallbackQuery):
         print('Произошла ошибка:', e)
     finally:
         session.close()
-
+        
 @router.callback_query(F.data.startswith ('cancel'))
 async def process_cancellation(callback: types.CallbackQuery):
     _, user_id, appointment_date_str = callback.data.split('|')
