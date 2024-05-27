@@ -1,0 +1,8 @@
+SQLAlchemy-Utils==0.41.2
+Babel==2.15.0
+aiogram==3.4.1
+SQLAlchemy==2.0.29
+python-dateutil==2.9.0.post0
+asyncpg==0.29.0
+aioschedule==0.5.2
+python-dotenv==1.0.1
