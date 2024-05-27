@@ -5,6 +5,7 @@ from sqlalchemy_utils import database_exists, create_database
 from secret import db_connect
 
 
+
 connection_string = db_connect
 engine = create_engine(connection_string)
 

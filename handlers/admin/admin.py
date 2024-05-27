@@ -7,18 +7,20 @@ from keyboards.admin.admin_list import admin_list_keyboard
 from keyboards.admin.create.choose_time import time_keyboard
 from keyboards.admin.delete.choose_type import delete_type
 from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep, AddAdmin, DeleteAdmin
-from all_calendars import telegramcalendar
-from all_calendars import current_calendar
+from handlers.admin import telegramcalendar
+from handlers.admin import current_calendar
 from keyboards.admin.delete.choose_time import time_delete_keyboard
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base,sessionmaker
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from aiogram import types
 from models import AvailableTime, Appointment, User
 from secret import  db_connect
 from babel.dates import format_datetime
 import json
 import os
+from .telegramcalendar import create_calendar
+
 router = Router()
 
 Base = declarative_base()
@@ -75,20 +77,129 @@ async def add_appointment(message: Message, state: FSMContext):
         await state.set_state(CreateAppointmentStep.choose_date)
 
 
+# @router.callback_query(CreateAppointmentStep.choose_date)
+# async def process_calendar_button(callback: types.CallbackQuery, state: FSMContext):
+#     data = telegramcalendar.separate_callback_data(callback.data)
+#     year, month, day = map(int, data[1:])
+#     curr = datetime(int(year), int(month), 1)
+#     if data[0] == "DAY":
+#         year, month, day = map(int, data[1:])
+#         await state.update_data(
+#             year=year,
+#             month=month,
+#             day=day,
+#         )
+#         await callback.message.edit_text(
+#             "Выберите время:", reply_markup=time_keyboard()
+#         )
+#         await state.set_state(CreateAppointmentStep.choose_time)
+
+#     elif data[0] == "PREV-MONTH":
+#         pre = curr - timedelta(days=1)
+#         await callback.message.edit_text(
+#             "Выберите время:", reply_markup=(create_calendar(int(pre.year),int(pre.month))
+#         ))
+#     elif data[0] == "NEXT-MONTH":
+#         ne = curr + timedelta(days=31)
+#         await callback.message.edit_text(
+#             "Выберите время:", reply_markup=(create_calendar(int(ne.year),int(ne.month))
+#         ))
+
+
+
+# @router.callback_query(CreateAppointmentStep.choose_date)
+# async def process_calendar_button(callback: types.CallbackQuery, state: FSMContext):
+#     data = telegramcalendar.separate_callback_data(callback.data)
+#     year, month, day = map(int, data[1:])
+#     curr = datetime(year, month, 1)
+
+#     if callback.data == "accept":
+#         data = await state.get_data()
+#         selected_days = data.get("selected_days", set())
+#         if not selected_days:
+#             await callback.message.answer("Вы не выбрали ни одной даты.")
+#             return
+
+#         await state.update_data(year=year, month=month, day=day)
+#         await callback.message.edit_text("Выберите время:", reply_markup=time_keyboard())
+#         await state.set_state(CreateAppointmentStep.choose_time)
+    
+#     elif data[0] == "PREV-MONTH":
+#         pre = curr - timedelta(days=1)
+#         await callback.message.edit_text("Выберите дату:", reply_markup=create_calendar(pre.year, pre.month))
+    
+#     elif data[0] == "NEXT-MONTH":
+#         ne = curr + timedelta(days=31)
+#         await callback.message.edit_text("Выберите дату:", reply_markup=create_calendar(ne.year, ne.month))
+    
+#     elif data[0] == "DAY":
+#         selected_date = datetime(year, month, day).date()
+#         state_data = await state.get_data()
+#         selected_days = state_data.get("selected_days", set())
+
+#         if selected_date in selected_days:
+#             selected_days.remove(selected_date)
+#         else:
+#             selected_days.add(selected_date)
+        
+#         await state.update_data(selected_days=selected_days)
+        
+#         # Update the calendar with the current selections
+#         await callback.message.edit_reply_markup(create_calendar(year, month))
+#     else:
+#         await callback.message.answer("Неправильный выбор.")
+
+# ///////////////////////////////////////////
 @router.callback_query(CreateAppointmentStep.choose_date)
 async def process_calendar_button(callback: types.CallbackQuery, state: FSMContext):
-    data = telegramcalendar.separate_callback_data(callback.data)
-    if data[0] == "DAY":
-        year, month, day = map(int, data[1:])
-        await state.update_data(
-            year=year,
-            month=month,
-            day=day,
-        )
-        await callback.message.edit_text(
-            "Выберите время:", reply_markup=time_keyboard()
-        )
-        await state.set_state(CreateAppointmentStep.choose_time)
+    try:
+        data = telegramcalendar.separate_callback_data(callback.data)
+        action = data[0]
+
+        if action == "accept":
+            state_data = await state.get_data()
+            selected_days = state_data.get("selected_days", set())
+            if not selected_days:
+                await callback.message.answer("Вы не выбрали ни одной даты.")
+                return
+
+            await callback.message.edit_text("Выберите время:", reply_markup=time_keyboard())
+            await state.set_state(CreateAppointmentStep.choose_time)
+
+        else:
+            if len(data) != 4:
+                raise ValueError("Invalid callback data format")
+
+            year, month, day = int(data[1]), int(data[2]), int(data[3])
+            curr = datetime(year, month, 1)
+
+            if action == "PREV-MONTH":
+                pre = curr - timedelta(days=1)
+                await callback.message.edit_text("Выберите дату(ы):", reply_markup=create_calendar(pre.year, pre.month))
+
+            elif action == "NEXT-MONTH":
+                ne = curr + timedelta(days=31)
+                await callback.message.edit_text("Выберите дату(ы):", reply_markup=create_calendar(ne.year, ne.month))
+
+            elif action == "DAY":
+                selected_date = date(year, month, day).strftime("%Y-%m-%d")
+                state_data = await state.get_data()
+                selected_days = state_data.get("selected_days", set())
+
+                if selected_date in selected_days:
+                    selected_days.remove(selected_date)
+                else:
+                    selected_days.add(selected_date)
+
+                await state.update_data(selected_days=selected_days)
+                
+            else:
+                await callback.message.answer("Неправильный выбор.")
+
+    except ValueError as e:
+        print(f"Error processing calendar button: {e}")
+        await callback.message.answer("Произошла ошибка при обработке вашего выбора. Пожалуйста, попробуйте снова.")
+
 
 
 @router.callback_query(CreateAppointmentStep.choose_time)
@@ -98,24 +209,26 @@ async def process_time_selection(callback: types.CallbackQuery, state: FSMContex
         if callback.data == "accept":
             data = await state.get_data()
             selected_times = data.get("selected_times", set())
-            year = data.get("year")
-            month = data.get("month")
-            day = data.get("day")
-            date = datetime(year, month, day).date()
+            selected_days = data.get("selected_days", set())
 
-            available_time = session.query(AvailableTime).filter_by(date=date).first()
-            if available_time:
-                existing_times = set([time.strftime('%H:%M') for time in available_time.times])
-                all_times = sorted(existing_times.union(selected_times))
-                available_time.times = [datetime.strptime(t, '%H:%M').time() for t in all_times]
-            else:
-                available_time = AvailableTime(date=date, times=sorted([datetime.strptime(t, '%H:%M').time() for t in selected_times]))
-                session.add(available_time)
+            for date_str in selected_days:
+                date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+                available_time = session.query(AvailableTime).filter_by(date=date).first()
+                if available_time:
+                    existing_times = set([time.strftime('%H:%M') for time in available_time.times])
+                    all_times = sorted(existing_times.union(selected_times))
+                    available_time.times = [datetime.strptime(t, '%H:%M').time() for t in all_times]
+                else:
+                    available_time = AvailableTime(date=date, times=sorted([datetime.strptime(t, '%H:%M').time() for t in selected_times]))
+                    session.add(available_time)
                 
-            session.commit()
+                session.commit()
+
             formatted_times = ", ".join(sorted(selected_times))
+            formatted_dates = ", ".join(sorted(selected_days))
             await callback.message.answer(
-                f"Вы успешно создали запись: {date} : {formatted_times}"
+                f"Вы успешно создали записи: {formatted_dates} : {formatted_times}"
             )
             await state.clear()
             await callback.message.delete()
@@ -136,6 +249,8 @@ async def process_time_selection(callback: types.CallbackQuery, state: FSMContex
         session.close()
 
 
+
+# /////////////////////////////
 @router.message(F.text == "Свободные окошки")
 async def show_all_appointment(message: Message, state: FSMContext):
     session = Session()
@@ -184,6 +299,8 @@ async def delete_all_day(callback: types.CallbackQuery, state: FSMContext):
     session = Session()
     try:
         data = current_calendar.separate_callback_data(callback.data)
+        year, month, day = map(int, data[1:])
+        curr = datetime(int(year), int(month), 1)
         if data[0] == "DAY":
             action, year, month, day = callback.data.split(";")
             year, month, day = map(int, (year, month, day))
@@ -199,6 +316,16 @@ async def delete_all_day(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.edit_text(
                 f"Вы успешно удалили запись: {date}", reply_markup=None
             )
+        elif data[0] == "PREV-MONTH":
+            pre = curr - timedelta(days=1)
+            await callback.message.edit_text(
+                "Выберите время:", reply_markup=(current_calendar.create_current_calendar(int(pre.year),int(pre.month))
+            ))
+        elif data[0] == "NEXT-MONTH":
+            ne = curr + timedelta(days=31)
+            await callback.message.edit_text(
+                "Выберите время:", reply_markup=(current_calendar.create_current_calendar(int(ne.year),int(ne.month))
+            ))
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
@@ -219,6 +346,8 @@ async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
     session = Session()
     try:
         data = current_calendar.separate_callback_data(callback.data)
+        year, month, day = map(int, data[1:])
+        curr = datetime(int(year), int(month), 1)
         if data[0] == "DAY":
             year, month, day = map(int, data[1:])
             date = datetime(year, month, day).date()
@@ -238,6 +367,16 @@ async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
                 await state.set_state(DeleteTimeStep.delete_time)
             else:
                 await callback.message.edit_text("На выбранную дату записей нет.")
+        elif data[0] == "PREV-MONTH":
+            pre = curr - timedelta(days=1)
+            await callback.message.edit_text(
+                "Выберите время:", reply_markup=(current_calendar.create_current_calendar(int(pre.year),int(pre.month))
+            ))
+        elif data[0] == "NEXT-MONTH":
+            ne = curr + timedelta(days=31)
+            await callback.message.edit_text(
+                "Выберите время:", reply_markup=(current_calendar.create_current_calendar(int(ne.year),int(ne.month))
+            ))
         else:
             await callback.message.edit_text("Ошибка выбора даты.")
             await state.set_state(DeleteTimeStep.choose_date)
@@ -306,7 +445,7 @@ async def show_active_appointment(message: Message, state: FSMContext):
             )
             formatted_appointments = "\n".join(
                 [
-                    f"{format_datetime(a.appointment_date, format='d MMMM yyyy', locale='ru')} {a.appointment_date.strftime('%H:%M')} {a.user.name} {a.user.contact} {a.user.instagram}"
+                    f"{format_datetime(a.appointment_date, format='d MMMM', locale='ru')} {a.appointment_date.strftime('%H:%M')} {a.user.name} {a.user.contact} {a.user.instagram}"
                     for a in appointments
                 ]
             )

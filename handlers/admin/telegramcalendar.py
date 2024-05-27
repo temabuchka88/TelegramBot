@@ -1,61 +1,30 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+import datetime
 import calendar
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
-from datetime import datetime
-from models import AvailableTime
-from secret import  db_connect
+from .current_calendar import russian_month_names
 
-Base = declarative_base()
-connection_string = db_connect
-engine = create_engine(connection_string)
+# def create_callback_data(action, year, month, day):
+#     """Create the callback data associated with each button"""
+#     return ";".join([action, str(year), str(month), str(day)])
 
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-
-
-russian_month_names = [
-    "",
-    "Январь",
-    "Февраль",
-    "Март",
-    "Апрель",
-    "Май",
-    "Июнь",
-    "Июль",
-    "Август",
-    "Сентябрь",
-    "Октябрь",
-    "Ноябрь",
-    "Декабрь",
-]
-
-
-def create_callback_data(action, year, month, day):
+def create_callback_data(action, year=None, month=None, day=None):
     """Create the callback data associated with each button"""
-    return ";".join([action, str(year), str(month), str(day)])
-
+    data = [action]
+    if year is not None:
+        data.append(str(year))
+    if month is not None:
+        data.append(str(month))
+    if day is not None:
+        data.append(str(day))
+    return ";".join(data)
 
 def separate_callback_data(data):
     """Separate the callback data"""
     return data.split(";")
 
-
-def get_dates_with_appointments():
-    """Get all dates with appointments from the database"""
-    session = Session()
-    try:
-        dates = session.query(AvailableTime.date.distinct()).all()
-        return [date[0] for date in dates]
-    except Exception as e:
-        print('Произошла ошибка:', e)
-    finally:
-        session.close()
-
-def create_current_calendar(year=None, month=None):
-    """Create a calendar with dates from the database"""
-    dates_with_appointments = get_dates_with_appointments()
-    now = datetime.now()
+def create_calendar(year=None, month=None):
+    now = datetime.datetime.now()
+    today = now.date()
     if year is None:
         year = now.year
     if month is None:
@@ -81,19 +50,17 @@ def create_current_calendar(year=None, month=None):
         row = []
         for day in week:
             if day == 0:
-                row.append(InlineKeyboardButton(text=" - ", callback_data=data_ignore))
+                row.append(InlineKeyboardButton(text=" ", callback_data=data_ignore))
             else:
-                date = datetime(year, month, day).date()
-                if date in dates_with_appointments:
+                date = datetime.date(year, month, day)
+                if date < today:
+                    row.append(InlineKeyboardButton(text="-", callback_data=data_ignore))
+                else:
                     row.append(
                         InlineKeyboardButton(
                             text=str(day),
                             callback_data=create_callback_data("DAY", year, month, day),
                         )
-                    )
-                else:
-                    row.append(
-                        InlineKeyboardButton(text=" - ", callback_data=data_ignore)
                     )
         keyboard.append(row)
     # Last row - Buttons
@@ -103,7 +70,7 @@ def create_current_calendar(year=None, month=None):
             text="<", callback_data=create_callback_data("PREV-MONTH", year, month, 1)
         )
     )
-    # row.append(InlineKeyboardButton(text=" ", callback_data=data_ignore))
+    row.append(InlineKeyboardButton(text="Подтвердить", callback_data="accept"))
     row.append(
         InlineKeyboardButton(
             text=">", callback_data=create_callback_data("NEXT-MONTH", year, month, 1)

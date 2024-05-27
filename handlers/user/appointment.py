@@ -5,10 +5,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base,sessionmaker
 from datetime import datetime
 from models import User, AvailableTime, Appointment
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from aiogram import types
-from all_calendars import current_calendar
+from handlers.admin import current_calendar
 from states import AppointmentStep
 from keyboards.user.appointment.choose_time import appointment_time_keyboard
 from keyboards.user.main_menu import all_steps_button
@@ -64,6 +64,8 @@ async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
     session = Session()
     try:
         data = current_calendar.separate_callback_data(callback.data)
+        year, month, day = map(int, data[1:])
+        curr = datetime(int(year), int(month), 1)
         if data[0] == "DAY":
             year, month, day = map(int, data[1:])
             date = datetime(year, month, day).date()
@@ -83,9 +85,17 @@ async def delete_select_day(callback: types.CallbackQuery, state: FSMContext):
                 await state.set_state(AppointmentStep.confirm_booking)
             else:
                 await callback.message.edit_text("На выбранную дату записей нет.")
-        else:
-            await callback.message.edit_text("Ошибка выбора даты.")
-            await state.set_state(AppointmentStep.choose_date)
+        if data[0] == "PREV-MONTH":
+            pre = curr - timedelta(days=1)
+            await callback.message.edit_text(
+                "Выберите время:", reply_markup=(current_calendar.create_current_calendar(int(pre.year),int(pre.month))
+            ))
+        elif data[0] == "NEXT-MONTH":
+            ne = curr + timedelta(days=31)
+            await callback.message.edit_text(
+                "Выберите время:", reply_markup=(current_calendar.create_current_calendar(int(ne.year),int(ne.month))
+            ))
+            
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:

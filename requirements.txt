@@ -2,3 +2,5 @@ sqlalchemy-utils
 babel
 aiogram
 sqlalchemy
+python-dateutil
+asyncpg
