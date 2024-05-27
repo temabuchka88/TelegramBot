@@ -11,7 +11,7 @@ from handlers.admin import telegramcalendar
 from handlers.admin import current_calendar
 from keyboards.admin.delete.choose_time import time_delete_keyboard
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base,sessionmaker
+from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, date
 from aiogram import types
 from models import AvailableTime, Appointment, User
