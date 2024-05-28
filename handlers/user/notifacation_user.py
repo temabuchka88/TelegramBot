@@ -16,7 +16,7 @@ engine = create_engine(connection_string)
 Session = sessionmaker(bind=engine)
 
 router = Router()
-admins = load_admins()
+
 
 
 async def schedule_notifications(bot: Bot):
@@ -44,6 +44,7 @@ async def schedule_notifications(bot: Bot):
         await bot.send_message(user.telegram_id, message, reply_markup=kb)
 
 async def notify_accept(bot: Bot, user_name: str, appointment_time: datetime):
+    admins = load_admins()
     appointment_date_str = format_datetime(appointment_time, format="d MMMM", locale='ru')
     appointment_time_str = appointment_time.strftime('%H:%M')
     for admin_id in admins.values():
@@ -67,7 +68,7 @@ async def process_confirmation(callback: types.CallbackQuery):
         print('Произошла ошибка:', e)
     finally:
         session.close()
-        
+    
 @router.callback_query(F.data.startswith ('cancel'))
 async def process_cancellation(callback: types.CallbackQuery):
     _, user_id, appointment_date_str = callback.data.split('|')

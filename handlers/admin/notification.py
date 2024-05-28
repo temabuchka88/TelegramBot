@@ -10,10 +10,10 @@ connection_string = db_connect
 engine = create_engine(connection_string)
 Session = sessionmaker(bind=engine)
 
-admins = load_admins()
 router = Router()
 
 async def notify_admins_schedule(bot: Bot):
+    admins = load_admins()
     try:
         session = Session()
         tomorrow = datetime.now().date() + timedelta(days=1)

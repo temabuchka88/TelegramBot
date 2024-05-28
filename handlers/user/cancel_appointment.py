@@ -15,12 +15,9 @@ Session = sessionmaker(bind=engine)
 
 router = Router()
 
-admins = load_admins()
-
-def is_admin(user_id):
-    return str(user_id) in admins.values()
 
 async def notify_admins_cancel(bot, user_name, appointment_time):
+    admins = load_admins()
     appointment_date_str = format_datetime(appointment_time, format="d MMMM", locale='ru')
     appointment_time_str = appointment_time.strftime('%H:%M')
     for admin_id in admins.values():

@@ -6,3 +6,5 @@ python-dateutil==2.9.0.post0
 asyncpg==0.29.0
 aioschedule==0.5.2
 python-dotenv==1.0.1
+APScheduler
+psycopg2
