@@ -2,8 +2,7 @@ import json
 import os
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-initial_times = {
-    "times": [
+times = [
         "9:00",
         "10:00",
         "11:00",
@@ -15,14 +14,13 @@ initial_times = {
         "17:00",
         "18:00",
         "19:00",
-        "20:00"
+        "20:00",
     ]
-}
 
 
 def time_keyboard():
     buttons = []
-    for time in initial_times:
+    for time in times:
         button = InlineKeyboardButton(text=time, callback_data=time)
         buttons.append([button])
     accept_button = InlineKeyboardButton(text="Подтвердить", callback_data="accept")

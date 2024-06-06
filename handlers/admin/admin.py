@@ -196,7 +196,7 @@ async def process_custom_time_input(message: Message, state: FSMContext):
         selected_times = data.get("selected_times", set())
         selected_times.add(custom_time)
         await state.update_data(selected_times=selected_times)
-        await message.answer("Время добавлено. Выберите другие времена или подтвердите выбор.", reply_markup=time_keyboard())
+        await message.answer(f"Время {custom_time} добавлено. Выберите другие времена или подтвердите выбор.", reply_markup=time_keyboard())
         await state.set_state(CreateAppointmentStep.choose_time)
     except Exception as e:
         print('Произошла ошибка:', e)
