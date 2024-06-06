@@ -19,7 +19,8 @@ services:
       - db
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@68.183.79.114:5432/${POSTGRES_DB}
+      TZ: Europe/Minsk
 
 volumes:
   postgres_data:

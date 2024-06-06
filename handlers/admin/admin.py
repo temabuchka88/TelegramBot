@@ -4,9 +4,9 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from keyboards.admin.main_menu import admin_keyboard
 from keyboards.admin.admin_list import admin_list_keyboard
-from keyboards.admin.create.choose_time import time_keyboard
+from keyboards.admin.create.choose_time import time_keyboard, add_time
 from keyboards.admin.delete.choose_type import delete_type
-from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep, AddAdmin, DeleteAdmin
+from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep, AddAdmin, DeleteAdmin, AddNewTime
 from handlers.admin import telegramcalendar
 from handlers.admin import current_calendar
 from keyboards.admin.delete.choose_time import time_delete_keyboard
@@ -63,7 +63,7 @@ async def start_admin(message: Message):
 @router.message(Command("admin"))
 async def admin_menu(message: Message):
     if is_admin(message.from_user.id):
-        await message.answer("Добро пожаловать в admin панель, для изменения списка администраторов введите 'Admin list'", reply_markup=admin_keyboard())
+        await message.answer("Добро пожаловать в admin панель, для изменения списка администраторов введите '/adminlist'", reply_markup=admin_keyboard())
 
 
 @router.message(F.text == "Добавить запись")
@@ -434,7 +434,7 @@ async def show_user_list(message: Message, state: FSMContext):
         session.close()
 
 
-@router.message(F.text == "Admin list")
+@router.message((Command("adminlist")))
 async def admin_list(message: Message):
     if is_admin(message.from_user.id):
         admin_list_str = "\n".join([f"{name}: {telegram_id}" for name, telegram_id in admins.items()])
@@ -488,3 +488,20 @@ async def process_delete_name(message: Message, state: FSMContext):
 async def show_admin_menu(message: Message):
     if is_admin(message.from_user.id):
         await message.answer("Выберите действие:", reply_markup=admin_keyboard())
+
+@router.message(F.text == "Добавить новое время")
+async def add_new_time(message: Message, state: FSMContext):
+    try:
+        if is_admin(message.from_user.id):
+            await message.answer(f"Введите новое время в формате '13:45'")
+            await state.set_state(AddNewTime.accept_time)
+    except Exception as e:
+        print('Произошла ошибка:', e)
+
+@router.message(AddNewTime.accept_time)
+async def accept_new_time(message: Message, state: FSMContext):
+    if is_admin(message.from_user.id):
+        new_time=message.text
+        add_time(new_time)
+        await message.answer(f"Новое время {new_time} успешно добавлено.",reply_markup=admin_keyboard())
+        await state.clear()

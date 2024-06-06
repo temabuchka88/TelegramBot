@@ -7,6 +7,7 @@ class RegistrationStep(StatesGroup):
 
 
 class AppointmentStep(StatesGroup):
+    choose_type_of_procedure = State()
     choose_date = State()
     choose_time = State()
     confirm_booking = State()
@@ -34,3 +35,6 @@ class AddAdmin(StatesGroup):
 
 class DeleteAdmin(StatesGroup):
     enter_name = State()
+
+class AddNewTime(StatesGroup):
+    accept_time = State()

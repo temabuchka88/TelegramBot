@@ -42,6 +42,7 @@ class Appointment(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
     appointment_date = Column(DateTime)
+    procedure = Column(String)
     user = relationship("User", back_populates="appointment", foreign_keys=[user_id])
 
 Base.metadata.create_all(engine)
