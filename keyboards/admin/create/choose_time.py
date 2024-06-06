@@ -38,6 +38,8 @@ def time_keyboard():
         button = InlineKeyboardButton(text=time, callback_data=time)
         buttons.append([button])
     accept_button = InlineKeyboardButton(text="Подтвердить", callback_data="accept")
+    custom_time_button = InlineKeyboardButton(text="Другое время", callback_data="custom_time")
+    buttons.append([custom_time_button])
     buttons.append([accept_button])
     kb = InlineKeyboardMarkup(inline_keyboard=buttons)
     return kb

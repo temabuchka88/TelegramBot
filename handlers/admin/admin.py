@@ -75,6 +75,15 @@ async def add_appointment(message: Message, state: FSMContext):
         await state.set_state(CreateAppointmentStep.choose_date)
 
 
+# Обработчик для добавления записи
+@router.message(F.text == "Добавить запись")
+async def add_appointment(message: Message, state: FSMContext):
+    if is_admin(message.from_user.id):
+        await message.reply(
+            "Выберите дату: ", reply_markup=telegramcalendar.create_calendar()
+        )
+        await state.set_state(CreateAppointmentStep.choose_date)
+
 @router.callback_query(CreateAppointmentStep.choose_date)
 async def process_calendar_button(callback: types.CallbackQuery, state: FSMContext):
     try:
@@ -100,14 +109,14 @@ async def process_calendar_button(callback: types.CallbackQuery, state: FSMConte
 
             if action == "PREV-MONTH":
                 pre = curr - timedelta(days=1)
-                await callback.message.edit_text("Выберите дату(ы):", reply_markup=create_calendar(pre.year, pre.month))
+                await callback.message.edit_text("Выберите дату(ы):", reply_markup=telegramcalendar.create_calendar(pre.year, pre.month))
 
             elif action == "NEXT-MONTH":
                 ne = curr + timedelta(days=31)
-                await callback.message.edit_text("Выберите дату(ы):", reply_markup=create_calendar(ne.year, ne.month))
+                await callback.message.edit_text("Выберите дату(ы):", reply_markup=telegramcalendar.create_calendar(ne.year, ne.month))
 
             elif action == "DAY":
-                selected_date = date(year, month, day).strftime("%Y-%m-%d")
+                selected_date = datetime(year, month, day).strftime("%Y-%m-%d")
                 state_data = await state.get_data()
                 selected_days = state_data.get("selected_days", set())
 
@@ -124,8 +133,6 @@ async def process_calendar_button(callback: types.CallbackQuery, state: FSMConte
     except ValueError as e:
         print(f"Error processing calendar button: {e}")
         await callback.message.answer("Произошла ошибка при обработке вашего выбора. Пожалуйста, попробуйте снова.")
-
-
 
 @router.callback_query(CreateAppointmentStep.choose_time)
 async def process_time_selection(callback: types.CallbackQuery, state: FSMContext):
@@ -157,6 +164,9 @@ async def process_time_selection(callback: types.CallbackQuery, state: FSMContex
             )
             await state.clear()
             await callback.message.delete()
+        elif callback.data == "custom_time":
+            await callback.message.answer("Введите время в формате HH:MM (например, 13:35):")
+            await state.set_state(CreateAppointmentStep.enter_custom_time)
         else:
             selected_time = callback.data
             data = await state.get_data()
@@ -168,6 +178,30 @@ async def process_time_selection(callback: types.CallbackQuery, state: FSMContex
                 await callback.message.answer(
                     f"Время {selected_time} уже выбрано. Выберите другое время."
                 )
+    except Exception as e:
+        print('Произошла ошибка:', e)
+    finally:
+        session.close()
+
+@router.message(CreateAppointmentStep.enter_custom_time)
+async def process_custom_time_input(message: Message, state: FSMContext):
+    session = Session()
+    try:
+        custom_time = message.text
+        try:
+            datetime.strptime(custom_time, '%H:%M')
+        except ValueError:
+            await message.answer("Неверный формат времени. Пожалуйста, введите время в формате HH:MM (например, 13:35).")
+            return
+        
+        data = await state.get_data()
+        selected_times = data.get("selected_times", set())
+        selected_times.add(custom_time)
+        await state.update_data(selected_times=selected_times)
+
+        add_time(custom_time)
+        await message.answer("Время добавлено. Выберите другие времена или подтвердите выбор.", reply_markup=time_keyboard())
+        await state.set_state(CreateAppointmentStep.choose_time)
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:

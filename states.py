@@ -16,6 +16,7 @@ class AppointmentStep(StatesGroup):
 class CreateAppointmentStep(StatesGroup):
     choose_date = State()
     choose_time = State()
+    enter_custom_time = State()
     create_appointment = State()
 
 
