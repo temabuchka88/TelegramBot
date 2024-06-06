@@ -25,7 +25,6 @@ class User(Base):
     instagram = Column(String)
     contact = Column(String)
     telegram_id = Column(BIGINT)
-    visit_count = Column(Integer, default=0)
     appointment = relationship("Appointment", back_populates="user")
 
 

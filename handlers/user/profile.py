@@ -21,13 +21,12 @@ async def show_profile(message: Message):
     session = Session()
     try:
         user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-        visit_count = user.visit_count
         active_appointment = session.query(Appointment).filter_by(user_id=user.id).filter(Appointment.appointment_date > datetime.now()).first()
         
         if active_appointment:
             active_appointment_text = format_datetime(active_appointment.appointment_date, format="d MMMM в H:mm", locale='ru')
             await message.answer(
-                f"Имя: {user.name}\nКоличество посещений: {visit_count}\nАктивная запись: {active_appointment_text}",
+                f"Имя: {user.name}\nАктивная запись: {active_appointment_text}",
                 reply_markup=cancel_appointment()
             )
         else:

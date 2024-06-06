@@ -445,7 +445,6 @@ async def show_user_list(message: Message, state: FSMContext):
                     User.name,
                     User.contact,
                     User.instagram,
-                    User.visit_count,
                     User.telegram_id,
                 )
                 .order_by(User.name)
@@ -453,7 +452,7 @@ async def show_user_list(message: Message, state: FSMContext):
             )
             formatted_users = "\n".join(
                 [
-                    f"{user.name} {user.contact} {user.instagram} посещений: {user.visit_count} telegramID: {user.telegram_id}"
+                    f"{user.name} {user.contact} {user.instagram} telegramID: {user.telegram_id}"
                     for user in users
                 ]
             )

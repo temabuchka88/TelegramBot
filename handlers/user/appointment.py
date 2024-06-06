@@ -29,7 +29,7 @@ async def notify_admins(bot, user_name, appointment_time, procedure):
     for admin_id in admins.values():
         await bot.send_message(
             chat_id=admin_id,
-            text=f"Пользователь {user_name} записался на {appointment_date_str} в {appointment_time_str} на процедуру {procedure}."
+            text=f"Пользователь {user_name} записался на {appointment_date_str} в {appointment_time_str} на процедуру {procedure.lower()}."
         )
 
 @router.message(F.text == "Записаться")
