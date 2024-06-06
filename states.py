@@ -36,6 +36,3 @@ class AddAdmin(StatesGroup):
 
 class DeleteAdmin(StatesGroup):
     enter_name = State()
-
-class AddNewTime(StatesGroup):
-    accept_time = State()

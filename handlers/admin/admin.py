@@ -4,21 +4,20 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from keyboards.admin.main_menu import admin_keyboard
 from keyboards.admin.admin_list import admin_list_keyboard
-from keyboards.admin.create.choose_time import time_keyboard, add_time
+from keyboards.admin.create.choose_time import time_keyboard
 from keyboards.admin.delete.choose_type import delete_type
-from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep, AddAdmin, DeleteAdmin, AddNewTime
+from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep, AddAdmin, DeleteAdmin
 from handlers.admin import telegramcalendar
 from handlers.admin import current_calendar
 from keyboards.admin.delete.choose_time import time_delete_keyboard
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from aiogram import types
 from models import AvailableTime, Appointment, User
 from babel.dates import format_datetime
 import json
 import os
-from .telegramcalendar import create_calendar
 from sqlalchemy.orm import sessionmaker
 from secret import db_connect
 
@@ -75,7 +74,6 @@ async def add_appointment(message: Message, state: FSMContext):
         await state.set_state(CreateAppointmentStep.choose_date)
 
 
-# Обработчик для добавления записи
 @router.message(F.text == "Добавить запись")
 async def add_appointment(message: Message, state: FSMContext):
     if is_admin(message.from_user.id):
@@ -198,8 +196,6 @@ async def process_custom_time_input(message: Message, state: FSMContext):
         selected_times = data.get("selected_times", set())
         selected_times.add(custom_time)
         await state.update_data(selected_times=selected_times)
-
-        add_time(custom_time)
         await message.answer("Время добавлено. Выберите другие времена или подтвердите выбор.", reply_markup=time_keyboard())
         await state.set_state(CreateAppointmentStep.choose_time)
     except Exception as e:
@@ -522,20 +518,3 @@ async def process_delete_name(message: Message, state: FSMContext):
 async def show_admin_menu(message: Message):
     if is_admin(message.from_user.id):
         await message.answer("Выберите действие:", reply_markup=admin_keyboard())
-
-@router.message(F.text == "Добавить новое время")
-async def add_new_time(message: Message, state: FSMContext):
-    try:
-        if is_admin(message.from_user.id):
-            await message.answer(f"Введите новое время в формате '13:45'")
-            await state.set_state(AddNewTime.accept_time)
-    except Exception as e:
-        print('Произошла ошибка:', e)
-
-@router.message(AddNewTime.accept_time)
-async def accept_new_time(message: Message, state: FSMContext):
-    if is_admin(message.from_user.id):
-        new_time=message.text
-        add_time(new_time)
-        await message.answer(f"Новое время {new_time} успешно добавлено.",reply_markup=admin_keyboard())
-        await state.clear()
