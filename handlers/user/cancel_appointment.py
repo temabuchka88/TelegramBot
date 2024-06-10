@@ -8,6 +8,7 @@ from babel.dates import format_datetime
 from sqlalchemy.orm import sessionmaker
 from secret import  db_connect
 from sqlalchemy import create_engine
+import collections
 
 connection_string = db_connect
 engine = create_engine(connection_string)
@@ -26,55 +27,57 @@ async def notify_admins_cancel(bot, user_name, appointment_time):
             text=f"Пользователь {user_name} отменил запись на {appointment_date_str} в {appointment_time_str}."
         )
 
-
 @router.message(F.text == "Отменить запись")
 async def cancel_appointment(message: Message, bot: Bot):
     session = Session()
     try:
         user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
         active_appointment = session.query(Appointment).filter_by(user_id=user.id).first()
+
         if active_appointment:
             appointment_time = active_appointment.appointment_date
             current_time = datetime.now()
+
             if appointment_time > current_time:
-                # Проверяем, есть ли уже объект AvailableTime для этой даты
                 available_time = session.query(AvailableTime).filter_by(date=appointment_time.date()).first()
+
                 if available_time:
-                    # Добавляем время отменяемой записи к объекту AvailableTime
-                    print("Тип времени отменяемой записи:", type(appointment_time.time()))
-                    print("Типы времен в списке:", [type(t) for t in available_time.times])
-                    available_time.times.append(appointment_time.time())
-                    print("Время отменяемой записи:", appointment_time.time())
-                    print("Времена в списке AvailableTime после добавления:", available_time.times)
+                    appointment_time_obj = appointment_time.time()
+                    available_times_list = list(available_time.times)
+
+                    if appointment_time_obj not in available_times_list:
+                        available_times_list.append(appointment_time_obj)
+                        sorted_times = sorted(available_times_list)
+                        available_time.times = collections.OrderedDict((t, True) for t in sorted_times)
+
+                        session.commit()
+
+                        await message.reply("Ваша запись успешно отменена. Время добавлено в доступные.", reply_markup=back_to_main_menu())
+                        await notify_admins_cancel(bot, user.name, appointment_time)
+                    else:
+                        del available_time.times[appointment_time_obj]
+                        session.commit()
+
+                        await message.reply("Ваша запись успешно отменена. Время уже было доступно.", reply_markup=back_to_main_menu())
+                        await notify_admins_cancel(bot, user.name, appointment_time)
                 else:
-                    # Создаем новый объект AvailableTime и добавляем в него время отменяемой записи
-                    available_time = AvailableTime(date=appointment_time.date(), times=[appointment_time.time()])
-                    session.merge(available_time)
-                    print("Тип времени отменяемой записи:", type(appointment_time.time()))
-                    print("Типы времен в списке:", [type(t) for t in available_time.times])
-                    print("Время отменяемой записи:", appointment_time.time())
-                    print("Времена в списке AvailableTime после добавления:", available_time.times)
-                
-                # Удаляем запись пользователя
-                session.delete(active_appointment)
-                session.commit()
-                print("Тип времени отменяемой записи:", type(appointment_time.time()))
-                print("Типы времен в списке:", [type(t) for t in available_time.times])
-                print("Время отменяемой записи:", appointment_time.time())
-                print("Времена в списке AvailableTime после добавления:", available_time.times)
-                await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
-                await notify_admins_cancel(bot, user.name, appointment_time)
-            else:
-                session.delete(active_appointment)
-                session.commit()
-                print("Тип времени отменяемой записи:", type(appointment_time.time()))
-                print("Типы времен в списке:", [type(t) for t in available_time.times])
-                print("Время отменяемой записи:", appointment_time.time())
-                await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
-                await notify_admins_cancel(bot, user.name, appointment_time)
+                    appointment_time_obj = appointment_time.time()
+                    new_available_time = AvailableTime(date=appointment_time.date(), times=collections.OrderedDict({appointment_time_obj: True}))
+                    session.add(new_available_time)
+                    session.commit()
+
+                    await message.reply("Ваша запись успешно отменена. Время добавлено в доступные.", reply_markup=back_to_main_menu())
+                    await notify_admins_cancel(bot, user.name, appointment_time)
+
+            session.delete(active_appointment)
+            session.commit()
+            
         else:
             await message.reply("У вас нет активной записи.", reply_markup=back_to_main_menu())
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
         session.close()
+
+
+
