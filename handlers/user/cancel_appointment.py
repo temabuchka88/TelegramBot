@@ -28,42 +28,28 @@ async def notify_admins_cancel(bot, user_name, appointment_time):
 
 
 @router.message(F.text == "Отменить запись")
-async def cancel_appointment(message: Message, bot: Bot):
+async def cancel_appointment(message: Message):
     session = Session()
     try:
         user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-        active_appointment = session.query(Appointment).filter_by(user_id=user.id).filter(Appointment.appointment_date > datetime.now()).first()
-        
+        active_appointment = session.query(Appointment).filter_by(user_id=user.id).first()
         if active_appointment:
             appointment_time = active_appointment.appointment_date
             current_time = datetime.now()
-            
             if appointment_time > current_time:
                 available_time = session.query(AvailableTime).filter_by(date=appointment_time.date()).first()
                 if available_time:
-                    # Проверяем, нет ли уже такого времени в списке
-                    appointment_time_obj = appointment_time.time()
-                    if appointment_time_obj not in available_time.times:
-                        available_time.times.append(appointment_time_obj)
-                        session.add(available_time)
-                        session.commit()
-
-                    session.delete(active_appointment)
-                    session.commit()
-                    await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
-                    await notify_admins_cancel(bot, user.name, appointment_time)
+                    available_time.times.append(appointment_time.time())
                 else:
                     available_time = AvailableTime(date=appointment_time.date(), times=[appointment_time.time()])
                     session.add(available_time)
-                    session.delete(active_appointment)
-                    session.commit()
-                    await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
-                    await notify_admins_cancel(bot, user.name, appointment_time)
+                session.delete(active_appointment)
+                session.commit()
+                await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
             else:
                 session.delete(active_appointment)
                 session.commit()
                 await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
-                await notify_admins_cancel(bot, user.name, appointment_time)
         else:
             await message.reply("У вас нет активной записи.", reply_markup=back_to_main_menu())
     except Exception as e:
