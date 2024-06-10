@@ -32,7 +32,7 @@ async def cancel_appointment(message: Message, bot: Bot):
     session = Session()
     try:
         user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-        active_appointment = session.query(Appointment).filter_by(user_id=user.id).first()
+        active_appointment = session.query(Appointment).filter_by(user_id=user.id).filter(Appointment.appointment_date > datetime.now()).first()
         if active_appointment:
             appointment_time = active_appointment.appointment_date
             current_time = datetime.now()
@@ -40,6 +40,7 @@ async def cancel_appointment(message: Message, bot: Bot):
                 available_time = session.query(AvailableTime).filter_by(date=appointment_time.date()).first()
                 if available_time:
                     available_time.times.append(appointment_time.time())
+                    session.add(available_time)
                 else:
                     available_time = AvailableTime(date=appointment_time.date(), times=[appointment_time.time()])
                     session.add(available_time)

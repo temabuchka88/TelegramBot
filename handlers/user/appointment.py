@@ -22,15 +22,21 @@ Session = sessionmaker(bind=engine)
 router = Router()
 
 
-async def notify_admins(bot, user_name, appointment_time, procedure):
+async def notify_admins(bot, user_name, user_instagram, user_contact, appointment_time, procedure):
     appointment_date_str = format_datetime(appointment_time, format="d MMMM", locale='ru')
     admins = load_admins()
     appointment_time_str = appointment_time.strftime('%H:%M')
     for admin_id in admins.values():
         await bot.send_message(
             chat_id=admin_id,
-            text=f"Пользователь {user_name} записался на {appointment_date_str} в {appointment_time_str} на процедуру {procedure.lower()}."
+            text=(
+                f"Пользователь {user_name} записался на {appointment_date_str} в {appointment_time_str} "
+                f"на процедуру {procedure.lower()}.\n"
+                f"Instagram: {user_instagram}\n"
+                f"Номер телефона: {user_contact}."
+            )
         )
+
 
 @router.message(F.text == "Записаться")
 async def start_command(message: Message, state: FSMContext):
@@ -146,7 +152,7 @@ async def appointment_selected_time(callback: types.CallbackQuery, state: FSMCon
         appointment_date_str = format_datetime(appointment_date, format="d MMMM", locale='ru')
         appointment_time_str = appointment_date.strftime('%H:%M')
         await callback.message.edit_text(f'Вы записаны на {appointment_date_str} в {appointment_time_str} на процедуру "{procedure}".')
-        await notify_admins(bot, user.name, appointment_date, procedure)
+        await notify_admins(bot, user.name,user.instagram, user.contact, appointment_date, procedure)
         await state.clear()
     except Exception as e:
         print('Произошла ошибка:', e)

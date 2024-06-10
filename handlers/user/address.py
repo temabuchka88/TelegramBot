@@ -6,7 +6,13 @@ router = Router()
 
 @router.message(F.text == "Адрес")
 async def show_address(message: Message):
-    await message.answer(
-        "Улица: Столетова 2 \nПодъезд: 7 \nЭтаж: 9 \nКвартира: 241 \nЛифт в доме находится на втором этаже! \nhttps://clck.ru/39mGJy",
-        reply_markup=back_to_main_menu(),
+    address_text = (
+        "🏠 **Адрес**: Столетова 2\n"
+        "🏢 **Подъезд**: 7\n"
+        "🏢 **Этаж**: 9\n"
+        "🚪 **Квартира**: 241\n"
+        "🔼 Лифт в доме находится на втором этаже!\n"
+        "📍 [Посмотреть на карте](https://clck.ru/39mGJy)"
     )
+    await message.answer(address_text, reply_markup=back_to_main_menu())
+

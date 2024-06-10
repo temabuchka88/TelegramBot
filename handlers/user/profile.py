@@ -25,14 +25,21 @@ async def show_profile(message: Message):
         
         if active_appointment:
             active_appointment_text = format_datetime(active_appointment.appointment_date, format="d MMMM в H:mm", locale='ru')
+            profile_text = (
+                f"👤 Имя: {user.name}\n"
+                f"📅 Активная запись: {active_appointment_text}"
+            )
             await message.answer(
-                f"Имя: {user.name}\nАктивная запись: {active_appointment_text}",
+                profile_text,
                 reply_markup=cancel_appointment()
             )
         else:
-            active_appointment_text = "Нет активной записи"
+            profile_text = (
+                f"👤 Имя: {user.name}\n"
+                f"📅 Активная запись: Нет активной записи"
+            )
             await message.answer(
-                f"Имя: {user.name}\nInstagram: {user.instagram}\nКонтактный номер: {user.contact}\nАктивная запись: {active_appointment_text}",
+                profile_text,
                 reply_markup=back_to_main_menu()
             )
 

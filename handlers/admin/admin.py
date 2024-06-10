@@ -20,6 +20,7 @@ import json
 import os
 from sqlalchemy.orm import sessionmaker
 from secret import db_connect
+from babel.dates import format_date
 
 connection_string = db_connect
 engine = create_engine(connection_string)
@@ -217,13 +218,18 @@ async def show_all_appointment(message: Message, state: FSMContext):
                 )
                 .all()
             )
-            formatted_appointments = "\n".join(
+
+            if not appointments:
+                await message.answer("Нет доступных свободных окошек.")
+                return
+
+            formatted_appointments = "\n\n".join(
                 [
-                    f"Дата: {a.date}, время: {', '.join([time.strftime('%H:%M') for time in sorted(a.times)])}"
+                    f"Дата: {format_date(a.date, format='d MMMM, EEEE', locale='ru')}\nВремя: {', '.join([time.strftime('%H:%M') for time in sorted(a.times)])}"
                     for a in appointments
                 ]
             )
-            await message.answer(f"Все записи:\n{formatted_appointments}")
+            await message.answer(f"Все записи:\n\n{formatted_appointments}")
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
@@ -397,13 +403,22 @@ async def show_active_appointment(message: Message, state: FSMContext):
                 .order_by(Appointment.appointment_date)
                 .all()
             )
-            formatted_appointments = "\n".join(
+            
+            if not appointments:
+                await message.answer("Нет активных записей.")
+                return
+
+            formatted_appointments = "\n\n".join(
                 [
-                    f"{format_datetime(a.appointment_date, format='d MMMM', locale='ru')} {a.appointment_date.strftime('%H:%M')} {a.user.name} {a.user.contact} {a.user.instagram}"
+                    f"Дата: {format_datetime(a.appointment_date, format='d MMMM, EEEE', locale='ru')}\n"
+                    f"Время: {a.appointment_date.strftime('%H:%M')}\n"
+                    f"Имя: {a.user.name}\n"
+                    f"Контакт: {a.user.contact}\n"
+                    f"Instagram: {a.user.instagram}"
                     for a in appointments
                 ]
             )
-            await message.answer(f"Все записи:\n{formatted_appointments}")
+            await message.answer(f"Все записи:\n\n{formatted_appointments}")
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
@@ -421,13 +436,22 @@ async def show_past_appointment(message: Message, state: FSMContext):
                 .order_by(Appointment.appointment_date.desc())  
                 .all()
             )
-            formatted_appointments = "\n".join(
+            
+            if not appointments:
+                await message.answer("Нет прошедших записей.")
+                return
+
+            formatted_appointments = "\n\n".join(
                 [
-                    f"{format_datetime(a.appointment_date, format='d MMMM yyyy', locale='ru')} {a.appointment_date.strftime('%H:%M')} {a.user.name} {a.user.contact} {a.user.instagram}"
+                    f"Дата: {format_datetime(a.appointment_date, format='d MMMM yyyy, EEEE', locale='ru')}\n"
+                    f"Время: {a.appointment_date.strftime('%H:%M')}\n"
+                    f"Имя: {a.user.name}\n"
+                    f"Контакт: {a.user.contact}\n"
+                    f"Instagram: {a.user.instagram}"
                     for a in appointments
                 ]
             )
-            await message.answer(f"Прошлые записи:\n{formatted_appointments}")
+            await message.answer(f"Прошлые записи:\n\n{formatted_appointments}")
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
@@ -450,25 +474,32 @@ async def show_user_list(message: Message, state: FSMContext):
                 .order_by(User.name)
                 .all()
             )
-            formatted_users = "\n".join(
+            
+            if not users:
+                await message.answer("Список пользователей пуст.")
+                return
+
+            formatted_users = "\n\n".join(
                 [
-                    f"{user.name} {user.contact} {user.instagram} telegramID: {user.telegram_id}"
+                    f"Имя: {user.name}\nКонтакт: {user.contact}\nInstagram: {user.instagram}\nTelegram ID: {user.telegram_id}"
                     for user in users
                 ]
             )
-            await message.answer(f"Список пользователей:\n{formatted_users}")
+            await message.answer(f"Список пользователей:\n\n{formatted_users}")
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
         session.close()
 
 
-@router.message((Command("adminlist")))
+
+@router.message(Command("adminlist"))
 async def admin_list(message: Message):
     if is_admin(message.from_user.id):
         admin_list_str = "\n".join([f"{name}: {telegram_id}" for name, telegram_id in admins.items()])
-        response_message = f"Список администраторов:\n{admin_list_str}\n\n"
-        await message.answer(f"Список администраторов:\n{admin_list_str}\n\n", reply_markup=admin_list_keyboard())
+        response_message = f"Список администраторов:\n\n{admin_list_str}\n"
+        await message.answer(response_message, reply_markup=admin_list_keyboard())
+
 
 @router.message(F.text == "Добавить администратора")
 async def add_admin(message: Message,state: FSMContext):

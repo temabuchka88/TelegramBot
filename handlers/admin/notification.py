@@ -18,14 +18,23 @@ async def notify_admins_schedule(bot: Bot):
         session = Session()
         tomorrow = datetime.now().date() + timedelta(days=1)
         appointments = session.query(Appointment)\
-        .join(User)\
-        .filter(Appointment.appointment_date >= tomorrow)\
-        .filter(Appointment.appointment_date < tomorrow + timedelta(days=1))\
-        .all()
+            .join(User)\
+            .filter(Appointment.appointment_date >= tomorrow)\
+            .filter(Appointment.appointment_date < tomorrow + timedelta(days=1))\
+            .all()
 
         if appointments:
-            appointments_info = "\n".join([f"{appointment.user.name} в {appointment.appointment_date.strftime('%H:%M')}" for appointment in appointments])
-            message = f"На завтра записаны:\n{appointments_info}"
+            appointments_info = "\n\n".join([
+                (
+                    f"Имя: {appointment.user.name}\n"
+                    f"Время: {appointment.appointment_date.strftime('%H:%M')}\n"
+                    f"Процедура: {appointment.procedure}\n"
+                    f"Instagram: {appointment.user.instagram}\n"
+                    f"Номер телефона: {appointment.user.contact}"
+                )
+                for appointment in appointments
+            ])
+            message = f"На завтра записаны:\n\n{appointments_info}"
             for admin_id in admins.values():
                 await bot.send_message(
                     chat_id=admin_id,
