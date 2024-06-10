@@ -28,7 +28,7 @@ async def notify_admins_cancel(bot, user_name, appointment_time):
 
 
 @router.message(F.text == "Отменить запись")
-async def cancel_appointment(message: Message):
+async def cancel_appointment(message: Message, bot: Bot):
     session = Session()
     try:
         user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -46,10 +46,12 @@ async def cancel_appointment(message: Message):
                 session.delete(active_appointment)
                 session.commit()
                 await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
+                await notify_admins_cancel(bot, user.name, appointment_time)
             else:
                 session.delete(active_appointment)
                 session.commit()
                 await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
+                await notify_admins_cancel(bot, user.name, appointment_time)
         else:
             await message.reply("У вас нет активной записи.", reply_markup=back_to_main_menu())
     except Exception as e:
