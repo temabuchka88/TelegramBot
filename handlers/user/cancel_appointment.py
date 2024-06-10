@@ -43,6 +43,7 @@ async def cancel_appointment(message: Message, bot: Bot):
                 else:
                     available_time = AvailableTime(date=appointment_time.date(), times=[appointment_time.time()])
                     session.add(available_time)
+                
                 session.delete(active_appointment)
                 session.commit()
                 await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
