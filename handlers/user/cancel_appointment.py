@@ -50,15 +50,26 @@ async def cancel_appointment(message: Message, bot: Bot):
                     # Создаем новый объект AvailableTime и добавляем в него время отменяемой записи
                     available_time = AvailableTime(date=appointment_time.date(), times=[appointment_time.time()])
                     session.merge(available_time)
+                    print("Тип времени отменяемой записи:", type(appointment_time.time()))
+                    print("Типы времен в списке:", [type(t) for t in available_time.times])
+                    print("Время отменяемой записи:", appointment_time.time())
+                    print("Времена в списке AvailableTime после добавления:", available_time.times)
                 
                 # Удаляем запись пользователя
                 session.delete(active_appointment)
                 session.commit()
+                print("Тип времени отменяемой записи:", type(appointment_time.time()))
+                print("Типы времен в списке:", [type(t) for t in available_time.times])
+                print("Время отменяемой записи:", appointment_time.time())
+                print("Времена в списке AvailableTime после добавления:", available_time.times)
                 await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
                 await notify_admins_cancel(bot, user.name, appointment_time)
             else:
                 session.delete(active_appointment)
                 session.commit()
+                print("Тип времени отменяемой записи:", type(appointment_time.time()))
+                print("Типы времен в списке:", [type(t) for t in available_time.times])
+                print("Время отменяемой записи:", appointment_time.time())
                 await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
                 await notify_admins_cancel(bot, user.name, appointment_time)
         else:
