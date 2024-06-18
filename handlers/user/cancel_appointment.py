@@ -52,13 +52,13 @@ async def cancel_appointment(message: Message, bot: Bot):
 
                         session.commit()
 
-                        await message.reply("Ваша запись успешно отменена. Время добавлено в доступные.", reply_markup=back_to_main_menu())
+                        await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
                         await notify_admins_cancel(bot, user.name, appointment_time)
                     else:
                         del available_time.times[appointment_time_obj]
                         session.commit()
 
-                        await message.reply("Ваша запись успешно отменена. Время уже было доступно.", reply_markup=back_to_main_menu())
+                        await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
                         await notify_admins_cancel(bot, user.name, appointment_time)
                 else:
                     appointment_time_obj = appointment_time.time()
@@ -66,7 +66,7 @@ async def cancel_appointment(message: Message, bot: Bot):
                     session.add(new_available_time)
                     session.commit()
 
-                    await message.reply("Ваша запись успешно отменена. Время добавлено в доступные.", reply_markup=back_to_main_menu())
+                    await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
                     await notify_admins_cancel(bot, user.name, appointment_time)
 
             session.delete(active_appointment)

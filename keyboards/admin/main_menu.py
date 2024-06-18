@@ -8,10 +8,11 @@ def admin_keyboard():
         types.KeyboardButton(text="Добавить запись"),
         types.KeyboardButton(text="Удалить запись"),
         types.KeyboardButton(text="Активные записи"),
+        types.KeyboardButton(text="Отменить запись"),
     )
     kb.row(
         types.KeyboardButton(text="Свободные окошки"),
-        types.KeyboardButton(text="Прошлые записи записи"),
+        types.KeyboardButton(text="Прошлые записи"),
         types.KeyboardButton(text="Список пользователей"),
     )
     kb.row(types.KeyboardButton(text="Выйти из админ панели"))

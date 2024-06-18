@@ -9,6 +9,7 @@ from keyboards.admin.delete.choose_type import delete_type
 from states import CreateAppointmentStep, DeleteAllDayStep, DeleteTimeStep, AddAdmin, DeleteAdmin
 from handlers.admin import telegramcalendar
 from handlers.admin import current_calendar
+from keyboards.admin.cancel_appointment import appointment_cancel_keyboard
 from keyboards.admin.delete.choose_time import time_delete_keyboard
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -21,6 +22,7 @@ import os
 from sqlalchemy.orm import sessionmaker
 from secret import db_connect
 from babel.dates import format_date
+import collections
 
 connection_string = db_connect
 engine = create_engine(connection_string)
@@ -424,6 +426,79 @@ async def show_active_appointment(message: Message, state: FSMContext):
     finally:
         session.close()
 
+@router.message(F.text == "Отменить запись")
+async def show_cancel_appointments(message: Message, state: FSMContext):
+    session = Session()
+    try:
+        if is_admin(message.from_user.id):
+            appointments = (
+                session.query(Appointment)
+                .join(User)
+                .filter(Appointment.appointment_date > datetime.now())
+                .order_by(Appointment.appointment_date)
+                .all()
+            )
+            
+            if not appointments:
+                await message.answer("Нет активных записей.")
+                return
+
+            kb = appointment_cancel_keyboard(appointments)
+            await message.answer("Выберите запись для отмены:", reply_markup=kb)
+    except Exception as e:
+        print('Произошла ошибка:', e)
+    finally:
+        session.close()
+
+@router.callback_query(F.data.startswith ('cancel_'))
+async def cancel_appointment_callback(callback_query: types.CallbackQuery,message: Message):
+    session = Session()
+    try:
+        appointment_id = int(callback_query.data.split('_')[1])
+        appointment = session.query(Appointment).filter_by(id=appointment_id).first()
+
+        if appointment:
+            appointment_time = appointment.appointment_date
+            current_time = datetime.now()
+
+            if appointment_time > current_time:
+                available_time = session.query(AvailableTime).filter_by(date=appointment_time.date()).first()
+
+                if available_time:
+                    appointment_time_obj = appointment_time.time()
+                    available_times_list = list(available_time.times)
+
+                    if appointment_time_obj not in available_times_list:
+                        available_times_list.append(appointment_time_obj)
+                        sorted_times = sorted(available_times_list)
+                        available_time.times = collections.OrderedDict((t, True) for t in sorted_times)
+
+                        session.commit()
+
+                        await message.reply("Вы успешно отмененили запись.", reply_markup=admin_keyboard())
+                    else:
+                        del available_time.times[appointment_time_obj]
+                        session.commit()
+
+                        await message.reply("Вы успешно отмененили запись.", reply_markup=admin_keyboard())
+                else:
+                    appointment_time_obj = appointment_time.time()
+                    new_available_time = AvailableTime(date=appointment_time.date(), times=collections.OrderedDict({appointment_time_obj: True}))
+                    session.add(new_available_time)
+                    session.commit()
+
+                    await message.reply("Вы успешно отмененили запись.", reply_markup=admin_keyboard())
+
+            session.delete(appointment)
+            session.commit()
+            
+        else:
+            await message.reply("У вас нет активных записей.", reply_markup=admin_keyboard())
+    except Exception as e:
+        print('Произошла ошибка:', e)
+    finally:
+        session.close()
+
 @router.message(F.text == "Прошлые записи")
 async def show_past_appointment(message: Message, state: FSMContext):
     session = Session()
@@ -438,7 +513,7 @@ async def show_past_appointment(message: Message, state: FSMContext):
             )
             
             if not appointments:
-                await message.answer("Нет прошедших записей.")
+                await message.answer("Нет прошедших записей.")  
                 return
 
             formatted_appointments = "\n\n".join(
