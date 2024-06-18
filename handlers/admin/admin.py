@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from aiogram.filters import Command
@@ -450,8 +450,8 @@ async def show_cancel_appointments(message: Message, state: FSMContext):
     finally:
         session.close()
 
-@router.callback_query(F.data.startswith ('cancel_'))
-async def cancel_appointment_callback(callback_query: types.CallbackQuery,message: Message):
+@router.callback_query(F.data.startswith('cancel_'))
+async def cancel_appointment_callback(callback_query: types.CallbackQuery, bot: Bot):
     session = Session()
     try:
         appointment_id = int(callback_query.data.split('_')[1])
@@ -460,6 +460,7 @@ async def cancel_appointment_callback(callback_query: types.CallbackQuery,messag
         if appointment:
             appointment_time = appointment.appointment_date
             current_time = datetime.now()
+            user = appointment.user  # Получаем пользователя записи
 
             if appointment_time > current_time:
                 available_time = session.query(AvailableTime).filter_by(date=appointment_time.date()).first()
@@ -474,26 +475,34 @@ async def cancel_appointment_callback(callback_query: types.CallbackQuery,messag
                         available_time.times = collections.OrderedDict((t, True) for t in sorted_times)
 
                         session.commit()
-
-                        await message.reply("Вы успешно отмененили запись.", reply_markup=admin_keyboard())
                     else:
                         del available_time.times[appointment_time_obj]
                         session.commit()
-
-                        await message.reply("Вы успешно отмененили запись.", reply_markup=admin_keyboard())
                 else:
                     appointment_time_obj = appointment_time.time()
                     new_available_time = AvailableTime(date=appointment_time.date(), times=collections.OrderedDict({appointment_time_obj: True}))
                     session.add(new_available_time)
                     session.commit()
 
-                    await message.reply("Вы успешно отмененили запись.", reply_markup=admin_keyboard())
-
             session.delete(appointment)
             session.commit()
+
+            cancellation_info = (
+                f"Дата: {appointment_time.strftime('%d-%m-%Y')}\n"
+                f"Время: {appointment_time.strftime('%H:%M')}\n"
+                f"Имя: {user.name}"
+            )
+
+            await callback_query.message.reply(f"Вы успешно отменили запись:\n{cancellation_info}", reply_markup=admin_keyboard())
+
+            # Отправка уведомления пользователю
+            user_notification = f"Ваша запись на {appointment_time.strftime('%d %B')} в {appointment_time.strftime('%H:%M')} отменена администратором."
+
+            # Отправка уведомления пользователю
+            await bot.send_message(user.telegram_id, user_notification)
             
         else:
-            await message.reply("У вас нет активных записей.", reply_markup=admin_keyboard())
+            await callback_query.message.reply("У вас нет активных записей.", reply_markup=admin_keyboard())
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
