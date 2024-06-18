@@ -488,17 +488,20 @@ async def cancel_appointment_callback(callback_query: types.CallbackQuery, bot: 
             session.commit()
 
             cancellation_info = (
-                f"Дата: {appointment_time.strftime('%d-%m-%Y')}\n"
+                f"Дата: {format_datetime(appointment_time, format='d MMMM yyyy, EEEE', locale='ru')}\n"
                 f"Время: {appointment_time.strftime('%H:%M')}\n"
-                f"Имя: {user.name}"
+                f"Имя: {appointment.user.name}\n"
+                f"Контакт: {appointment.user.contact}\n"
+                f"Instagram: {appointment.user.instagram}"
             )
+            await callback_query.message.reply(f"Отменена запись:\n\n{cancellation_info}")
 
-            await callback_query.message.reply(f"Вы успешно отменили запись:\n{cancellation_info}", reply_markup=admin_keyboard())
-
-            # Отправка уведомления пользователю
-            user_notification = f"Ваша запись на {appointment_time.strftime('%d %B')} в {appointment_time.strftime('%H:%M')} отменена администратором."
-
-            # Отправка уведомления пользователю
+            user = appointment.user
+            # Уведомление пользователя
+            user_notification = (
+                f"Ваша запись на {format_date(appointment_time, format='d MMMM', locale='ru')} "
+                f"в {appointment_time.strftime('%H:%M')} отменена администратором."
+            )
             await bot.send_message(user.telegram_id, user_notification)
             
         else:
