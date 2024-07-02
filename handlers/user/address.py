@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from keyboards.user.back_to_main_menu import back_to_main_menu
+from keyboards.user.main_menu import all_steps_button
 
 router = Router()
 
@@ -14,6 +14,6 @@ async def show_address(message: Message):
         "Лифт в доме находится на втором этаже!\n"
         '<a href="https://clck.ru/39mGJy">Посмотреть на карте</a>'
     )
-    await message.answer(address_text, reply_markup=back_to_main_menu(), parse_mode="HTML")
+    await message.answer(address_text, reply_markup=all_steps_button(), parse_mode="HTML")
 
 

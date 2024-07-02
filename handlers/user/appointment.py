@@ -57,24 +57,6 @@ async def start_command(message: Message, state: FSMContext):
     finally:
         session.close()
 
-@router.message(F.text == "Записаться")
-async def start_command(message: Message, state: FSMContext):
-    session = Session()
-    try:
-        user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-        active_appointment = session.query(Appointment).filter_by(user_id=user.id).filter(Appointment.appointment_date > datetime.now()).first()
-        if active_appointment:
-            await message.reply("Вы уже записаны на другое время.", reply_markup=all_steps_button())
-            return
-        else:
-            await message.reply(
-                "Выберите тип процедуры: ", reply_markup=procedure_keyboard()
-            )
-            await state.set_state(AppointmentStep.choose_type_of_procedure)
-    except Exception as e:
-        print('Произошла ошибка:', e)
-    finally:
-        session.close()
 
 
 @router.callback_query(AppointmentStep.choose_type_of_procedure)
@@ -133,6 +115,15 @@ async def appointment_select_day(callback: types.CallbackQuery, state: FSMContex
 async def appointment_selected_time(callback: types.CallbackQuery, state: FSMContext, bot: Bot):
     session = Session()
     try:
+        if callback.data == 'back_to_choose_date':
+            data = await state.get_data()
+            await callback.message.edit_text(
+                "Выберите дату: ",
+                reply_markup=current_calendar.create_current_calendar(data["year"], data["month"])
+            )
+            await state.set_state(AppointmentStep.choose_date)
+            return
+
         data = await state.get_data()
         time_obj = time.strptime(callback.data, '%H:%M')
         appointment_date = datetime(data["year"], data["month"], data["day"], time_obj.tm_hour, time_obj.tm_min)
@@ -152,7 +143,7 @@ async def appointment_selected_time(callback: types.CallbackQuery, state: FSMCon
         appointment_date_str = format_datetime(appointment_date, format="d MMMM", locale='ru')
         appointment_time_str = appointment_date.strftime('%H:%M')
         await callback.message.edit_text(f'Вы записаны на {appointment_date_str} в {appointment_time_str} на процедуру "{procedure}".')
-        await notify_admins(bot, user.name,user.instagram, user.contact, appointment_date, procedure)
+        await notify_admins(bot, user.name, user.instagram, user.contact, appointment_date, procedure)
         await state.clear()
     except Exception as e:
         print('Произошла ошибка:', e)

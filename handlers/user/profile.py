@@ -8,6 +8,7 @@ from babel.dates import format_datetime
 from sqlalchemy.orm import sessionmaker
 from secret import  db_connect
 from sqlalchemy import create_engine
+from keyboards.user.main_menu import all_steps_button
 
 connection_string = db_connect
 engine = create_engine(connection_string)
@@ -40,7 +41,7 @@ async def show_profile(message: Message):
             )
             await message.answer(
                 profile_text,
-                reply_markup=back_to_main_menu()
+                reply_markup=all_steps_button()
             )
 
     except Exception as e:

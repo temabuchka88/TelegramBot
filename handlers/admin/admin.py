@@ -503,7 +503,6 @@ async def cancel_appointment_callback(callback_query: types.CallbackQuery, bot: 
                 f"в {appointment_time.strftime('%H:%M')} отменена администратором."
             )
             await bot.send_message(user.telegram_id, user_notification)
-            
         else:
             await callback_query.message.reply("У вас нет активных записей.", reply_markup=admin_keyboard())
     except Exception as e:
