@@ -5,7 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from secret import telegram_token
 from handlers.user import registration
 from handlers.admin import admin
-from handlers.user import address, appointment, choose_step, profile, cancel_appointment
+from handlers.user import address, appointment, choose_step, profile, cancel_appointment, prise_list
 from handlers.user.notifacation_user import schedule_notifications
 from handlers.admin.notification import notify_admins_schedule
 from handlers.admin import notification
@@ -44,6 +44,7 @@ async def main():
     dp.include_router(cancel_appointment.router)
     dp.include_router(notification.router)
     dp.include_router(notifacation_user.router)
+    dp.include_router(prise_list.router)
 
     await dp.start_polling(bot)
 

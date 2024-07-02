@@ -426,7 +426,7 @@ async def show_active_appointment(message: Message, state: FSMContext):
     finally:
         session.close()
 
-@router.message(F.text == "Отменить запись")
+@router.message(F.text == "Отмена записи")
 async def show_cancel_appointments(message: Message, state: FSMContext):
     session = Session()
     try:
