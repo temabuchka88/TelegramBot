@@ -566,8 +566,8 @@ async def show_user_list(message: Message, state: FSMContext):
 
             formatted_users = "\n\n".join(
                 [
-                    f"{idx + 1}. Имя: {user.name}\nКонтакт: +{user.contact}\nInstagram: {user.instagram}\nTelegram ID: {user.telegram_id}"
-                    for idx, user in enumerate(users)
+                    f"Имя: {user.name}\nКонтакт: {user.contact}\nInstagram: {user.instagram}\nTelegram ID: {user.telegram_id}"
+                    for user in users
                 ]
             )
             await message.answer(f"Список пользователей:\n\n{formatted_users}")
