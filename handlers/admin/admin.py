@@ -550,7 +550,6 @@ async def show_user_list(message: Message, state: FSMContext):
         if is_admin(message.from_user.id):
             users = (
                 session.query(User)
-                .outerjoin(Appointment)
                 .with_entities(
                     User.name,
                     User.contact,
@@ -567,8 +566,8 @@ async def show_user_list(message: Message, state: FSMContext):
 
             formatted_users = "\n\n".join(
                 [
-                    f"Имя: {user.name}\nКонтакт: {user.contact}\nInstagram: {user.instagram}\nTelegram ID: {user.telegram_id}"
-                    for user in users
+                    f"{idx + 1}. Имя: {user.name}\nКонтакт: +{user.contact}\nInstagram: {user.instagram}\nTelegram ID: {user.telegram_id}"
+                    for idx, user in enumerate(users)
                 ]
             )
             await message.answer(f"Список пользователей:\n\n{formatted_users}")
