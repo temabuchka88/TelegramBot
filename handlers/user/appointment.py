@@ -142,7 +142,7 @@ async def appointment_selected_time(callback: types.CallbackQuery, state: FSMCon
         session.commit()
         appointment_date_str = format_datetime(appointment_date, format="d MMMM", locale='ru')
         appointment_time_str = appointment_date.strftime('%H:%M')
-        await callback.message.edit_text(f'Вы записаны на {appointment_date_str} в {appointment_time_str} на процедуру "{procedure}".')
+        await callback.message.edit_text(f'Вы записаны на {appointment_date_str} в {appointment_time_str} на процедуру "{procedure}".\nПо любым вопросам можно написать мне лично: @juliaglin')
         await notify_admins(bot, user.name, user.instagram, user.contact, appointment_date, procedure)
         await state.clear()
     except Exception as e:

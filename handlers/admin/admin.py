@@ -572,7 +572,7 @@ async def show_user_list(message: Message, state: FSMContext):
             )
             await message.answer(f"Список пользователей:\n\n{formatted_users}")
     except Exception as e:
-        print('Произошла ошибка:', e)
+        await message.answer('Произошла ошибка:', e)
     finally:
         session.close()
 

@@ -62,7 +62,7 @@ async def process_confirmation(callback: types.CallbackQuery):
         appointment_date = datetime.fromisoformat(appointment_date)
 
         await notify_accept(callback.bot, user.name, appointment_date)
-        await callback.message.answer("Вы подтвердили запись.")
+        await callback.message.edit_text("Вы подтвердили запись.")
 
     except Exception as e:
         print('Произошла ошибка:', e)
@@ -90,12 +90,12 @@ async def process_cancellation(callback: types.CallbackQuery):
                     session.add(available_time)
                 session.delete(active_appointment)
                 session.commit()
-                await callback.message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
+                await callback.message.edit_text("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
                 await notify_admins_cancel(callback.bot, user.name, appointment_date)
             else:
                 session.delete(active_appointment)
                 session.commit()
-                await callback.message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
+                await callback.message.edit_text("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
                 await notify_admins_cancel(callback.bot, user.name, appointment_date)
         else:
             await callback.message.reply("У вас нет активной записи.", reply_markup=back_to_main_menu())
