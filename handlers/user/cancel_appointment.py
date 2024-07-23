@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from secret import  db_connect
 from sqlalchemy import create_engine
 import collections
+from keyboards.user.main_menu import all_steps_button
 
 connection_string = db_connect
 engine = create_engine(connection_string)
@@ -52,13 +53,13 @@ async def cancel_appointment(message: Message, bot: Bot):
 
                         session.commit()
 
-                        await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
+                        await message.reply("Ваша запись успешно отменена.", reply_markup=all_steps_button())
                         await notify_admins_cancel(bot, user.name, appointment_time)
                     else:
                         del available_time.times[appointment_time_obj]
                         session.commit()
 
-                        await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
+                        await message.reply("Ваша запись успешно отменена.", reply_markup=all_steps_button())
                         await notify_admins_cancel(bot, user.name, appointment_time)
                 else:
                     appointment_time_obj = appointment_time.time()
@@ -66,14 +67,14 @@ async def cancel_appointment(message: Message, bot: Bot):
                     session.add(new_available_time)
                     session.commit()
 
-                    await message.reply("Ваша запись успешно отменена.", reply_markup=back_to_main_menu())
+                    await message.reply("Ваша запись успешно отменена.", reply_markup=all_steps_button())
                     await notify_admins_cancel(bot, user.name, appointment_time)
 
             session.delete(active_appointment)
             session.commit()
             
         else:
-            await message.reply("У вас нет активной записи.", reply_markup=back_to_main_menu())
+            await message.reply("У вас нет активной записи.", reply_markup=all_steps_button())
     except Exception as e:
         print('Произошла ошибка:', e)
     finally:
