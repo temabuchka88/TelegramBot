@@ -1,6 +1,5 @@
 from aiogram import Router, F, Bot
 from aiogram.types import Message
-from keyboards.user.back_to_main_menu import back_to_main_menu
 from models import User, Appointment, AvailableTime
 from datetime import datetime
 from ..admin.admin import load_admins

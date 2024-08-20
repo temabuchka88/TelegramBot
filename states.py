@@ -12,24 +12,6 @@ class AppointmentStep(StatesGroup):
     choose_time = State()
     confirm_booking = State()
 
-
-class CreateAppointmentStep(StatesGroup):
-    choose_date = State()
-    choose_time = State()
-    enter_custom_time = State()
-    create_appointment = State()
-
-
-class DeleteAllDayStep(StatesGroup):
-    choose_date = State()
-    delete_day = State()
-  
-  
-class DeleteTimeStep(StatesGroup):
-    choose_date = State()
-    choose_time = State()
-    delete_time = State()
-
 class AddAdmin(StatesGroup):
     enter_name= State()
     enter_id = State()

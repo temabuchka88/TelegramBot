@@ -2,7 +2,7 @@
 from aiogram import Bot, Router, types, F
 from datetime import datetime, timedelta
 from models import User, Appointment, AvailableTime
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from babel.dates import format_datetime
 from handlers.user.cancel_appointment import notify_admins_cancel
 from keyboards.user.back_to_main_menu import back_to_main_menu

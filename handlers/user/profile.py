@@ -1,6 +1,5 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from keyboards.user.back_to_main_menu import back_to_main_menu
 from keyboards.user.appointment.cancel_appointment import cancel_appointment
 from models import User, Appointment
 from datetime import datetime
